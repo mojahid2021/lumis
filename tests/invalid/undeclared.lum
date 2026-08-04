@@ -1,0 +1,7 @@
+// Semantic error test: undeclared variable `y`
+int main() {
+    int x;
+    x = 10;
+    y = 20; // y is not declared
+    return 0;
+}

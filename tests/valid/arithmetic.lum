@@ -1,0 +1,18 @@
+// Arithmetic and Logical operations test
+int main() {
+    int a;
+    int b;
+    int c;
+    bool isGreater;
+
+    a = 10;
+    b = 20;
+    c = a + b * 2;
+    print(c);
+
+    isGreater = c > 30;
+    if (isGreater) {
+        print(1);
+    }
+    return 0;
+}

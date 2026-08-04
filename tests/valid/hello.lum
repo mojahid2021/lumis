@@ -1,0 +1,5 @@
+// Hello World example in Lumis
+int main() {
+    print(42);
+    return 0;
+}

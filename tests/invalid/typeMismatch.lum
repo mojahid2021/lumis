@@ -1,0 +1,8 @@
+// Semantic error test: type mismatch
+int main() {
+    int x;
+    bool flag;
+    flag = true;
+    x = flag; // Error: assigning bool to int
+    return 0;
+}

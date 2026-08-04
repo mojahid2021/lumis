@@ -1,0 +1,11 @@
+// Function calls and parameter passing test
+int multiply(int x, int y) {
+    return x * y;
+}
+
+int main() {
+    int res;
+    res = multiply(6, 7);
+    print(res);
+    return 0;
+}
