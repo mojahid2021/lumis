@@ -1,4 +1,12 @@
 # Lumis — A Mini Compiler
+<p align="center">
+  <img src="assets/lumis.png" alt="Lumis Compiler Logo" width="100%" />
+</p>
+
+<p align="center">
+  <b>A Educational Compiler &amp; Execution Engine for Compiler Design Course</b><br>
+  Built in C using Flex (Lexer) and Bison (Parser)
+</p>
 
 A beginner-friendly compiler for a small C-like language. Lumis walks source code through the **classic compiler pipeline**:
 
@@ -13,12 +21,15 @@ It is implemented in **C** using **Flex** (lexer) and **Bison** (parser). The co
 ## 1. Features
 
 - **Types:** `int`, `float`, `char`, `bool`, `void`
-- **Statements:** variable declarations, assignments, `if`/`else`, `while`, `for`, `return`, `print`
-- **Expressions:** arithmetic, relational, logical operators with correct precedence
-- **Functions:** definitions, parameters, calls, return values
+- **Statements:** variable declarations (initialized/uninitialized), assignments, `if`/`else`, `while`, `for`, `return`, `print`
+- **Expressions:** arithmetic (`+ - * / %`), relational (`< > <= >= == !=`), logical (`&& || !`), unary operators with standard precedence
+- **Functions:** definitions, parameters, function calls, `void` and typed return values
 - **Comments:** single-line (`//`) and block (`/* ... */`)
-- **Error reporting** with line numbers at every phase
-- **Output:** human-readable three-address code (TAC)
+- **Error reporting:** descriptive line-numbered lexical, syntax, and semantic error diagnostics
+- **Multiple Back-End Modes:**
+  1. **Three-Address Code (TAC):** Machine-independent intermediate code generator
+  2. **In-Memory AST Interpreter (`-r`):** Direct statement execution engine
+  3. **Native Binary Compiler (`-o`):** C code generator & GCC compiler driver
 
 ---
 

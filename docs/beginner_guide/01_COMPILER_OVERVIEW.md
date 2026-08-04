@@ -22,18 +22,9 @@ A modern compiler pipeline is divided into two main parts:
    - **In-Memory AST Interpreter**: Executes statements directly for immediate output.
    - **C Code Generation & GCC Compiler Driver**: Emits valid C code and compiles native binaries.
 
-```text
-  +-------------------------------------------------------------------------------+
-  |                                 FRONT END                                     |
-  |  Source (.lum) ---> Lexer ---> Tokens ---> Parser ---> AST ---> Type Checker  |
-  +-------------------------------------------------------------------------------+
-                                                                 │
-                                                                 ▼
-  +-------------------------------------------------------------------------------+
-  |                                 BACK END                                      |
-  |  AST ---> [1] TAC Generator  |  [2] Interpreter (-r)  |  [3] C & GCC (-o)     |
-  +-------------------------------------------------------------------------------+
-```
+<p align="center">
+  <img src="../../assets/pipeline.svg" alt="Lumis Pipeline Architecture" width="100%" />
+</p>
 
 ---
 
