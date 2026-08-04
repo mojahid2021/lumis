@@ -1,1 +1,48 @@
-/build
+# ============================================================
+#  Lumis Mini Compiler — Git Ignore Rules
+# ============================================================
+
+# Build directory & generated C/header files
+/build/
+build/
+*.tab.c
+*.tab.h
+lex.yy.c
+
+# Compiled compiler binaries & object files
+/lumis
+lumis
+lumis.exe
+*.exe
+*.out
+*.o
+*.a
+*.so
+*.dylib
+
+# Temporary test binaries & run artifacts
+hello_bin
+var_bin
+void_bin
+tmp_out
+*.tmp
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor & IDE workspace files
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~

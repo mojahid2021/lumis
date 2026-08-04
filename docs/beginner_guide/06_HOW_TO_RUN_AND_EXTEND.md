@@ -8,12 +8,33 @@ This guide walks you through building, testing, and modifying the Lumis compiler
 
 ### Prerequisites
 
-Make sure you have GCC, Flex, Bison, and Make installed:
+Make sure you have GCC/Clang, Flex, Bison, and Make installed:
 
 ```bash
-# Ubuntu / Debian
-sudo apt update
-sudo apt install -y gcc flex bison make
+# 1. Linux (Ubuntu / Debian)
+sudo apt update && sudo apt install -y gcc flex bison make
+
+# 2. Linux (Fedora / Arch)
+sudo dnf install gcc flex bison make      # Fedora
+sudo pacman -S gcc flex bison make        # Arch
+
+# 3. macOS (using Homebrew)
+xcode-select --install
+brew install flex bison gcc make
+
+# macOS PATH setup for Homebrew Bison & Flex:
+# Apple Silicon (M1/M2/M3/M4):
+export PATH="/opt/homebrew/opt/bison/bin:/opt/homebrew/opt/flex/bin:$PATH"
+# Intel Macs:
+export PATH="/usr/local/opt/bison/bin:/usr/local/opt/flex/bin:$PATH"
+
+# 4. Windows (WSL - Recommended)
+wsl --install
+sudo apt update && sudo apt install -y gcc flex bison make
+
+# 5. Windows (MSYS2 / Chocolatey)
+pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-flex mingw-w64-x86_64-bison make  # MSYS2
+choco install winflexbison mingw make                                             # Chocolatey
 ```
 
 ### Build Commands
@@ -31,15 +52,99 @@ make clean
 make test
 ```
 
-### Running a Single File
+### Running and Compiling Code
 
 ```bash
+# View compiler pipeline (AST, Symbol Table, TAC)
 ./lumis tests/valid/hello.lum
+
+# Execute program directly using the in-memory interpreter
+./lumis -r tests/valid/hello.lum
+
+# Compile program to a standalone native binary
+./lumis -o hello tests/valid/hello.lum
+./hello
 ```
 
 ---
 
-## 2. Inspecting Compiler Outputs
+## 2. How to Write Lumis Code (`.lum`)
+
+Lumis uses a simple, intuitive C-like syntax. Here is how to write `.lum` programs:
+
+### Variables & Data Types
+Lumis supports five types: `int`, `float`, `char`, `bool`, and `void` (for functions).
+
+```c
+int main() {
+    // Uninitialized declaration
+    int count;
+
+    // Initialized declarations
+    int age = 20;
+    float pi = 3.14;
+    char grade = 'A';
+    bool isPassed = true;
+
+    // Assignments
+    count = age + 5;
+    print(count);
+
+    return 0;
+}
+```
+
+### Operators
+- Arithmetic: `+`, `-`, `*`, `/`, `%`
+- Comparison: `<`, `>`, `<=`, `>=`, `==`, `!=`
+- Logical: `&&`, `||`, `!`
+
+### Control Flow
+```c
+// If / Else
+if (score >= 90) {
+    print(1);
+} else {
+    print(0);
+}
+
+// While loop
+int i = 1;
+while (i <= 5) {
+    print(i);
+    i = i + 1;
+}
+
+// For loop
+for (int j = 0; j < 5; j = j + 1) {
+    print(j);
+}
+```
+
+### Functions
+```c
+// Function returning int
+int add(int a, int b) {
+    return a + b;
+}
+
+// Void function returning no value
+void greet() {
+    print(100);
+    return;
+}
+
+int main() {
+    greet();
+    int sum = add(10, 20);
+    print(sum);
+    return 0;
+}
+```
+
+---
+
+## 3. Inspecting Compiler Outputs
 
 When you run `./lumis tests/valid/arithmetic.lum`, you can inspect each phase's output:
 

@@ -62,6 +62,7 @@ CHAR_LIT    '([^'\\\n]|\\.)'
 "float"                 { return FLOAT; }
 "char"                  { return CHAR; }
 "bool"                  { return BOOL; }
+"void"                  { return VOID; }
 "if"                    { return IF; }
 "else"                  { return ELSE; }
 "while"                 { return WHILE; }

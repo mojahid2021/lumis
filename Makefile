@@ -32,7 +32,9 @@ SRCS  = $(SRC_DIR)/main.c \
         $(SRC_DIR)/ast.c \
         $(SRC_DIR)/symtab.c \
         $(SRC_DIR)/semantic.c \
-        $(SRC_DIR)/codegen.c
+        $(SRC_DIR)/codegen.c \
+        $(SRC_DIR)/interp.c \
+        $(SRC_DIR)/c_backend.c
 
 OBJS  = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 # The parser/lexer .c files live in build/, so handle them too

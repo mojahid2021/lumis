@@ -29,6 +29,10 @@ ID          [a-zA-Z_][a-zA-Z0-9_]*
 %%
 /* Section 3: Token Matching Rules & Actions */
 "int"                   { return INT; }
+"float"                 { return FLOAT; }
+"char"                  { return CHAR; }
+"bool"                  { return BOOL; }
+"void"                  { return VOID; }
 "if"                    { return IF; }
 {DIGIT}+                { yylval.intval = atoi(yytext); return INT_NUM; }
 {ID}                    { yylval.strval = strdup(yytext); return ID; }

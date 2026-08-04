@@ -1,117 +1,139 @@
-# 01. Lumis Compiler — Theoretical Overview & Workflow
+# 01. Lumis Compiler — Theoretical Overview & Architecture
 
-Welcome to Lumis! This guide explains how a compiler works from scratch in a beginner-friendly way.
+Welcome to the **Lumis Compiler Design Guide**! This document provides a comprehensive, course-level introduction to compiler theory and explains how Lumis implements a classical 4-phase compiler pipeline.
 
 ---
 
 ## 1. What is a Compiler?
 
-A **compiler** is a program that reads source code written in a human-readable language (like C, Java, or Lumis `.lum` files) and translates it into a lower-level language (like assembly, machine code, or Three-Address Code), while verifying that the code is free of errors.
+A **compiler** is a software system that translates source code written in a high-level programming language (such as Lumis `.lum` files) into a target representation (such as Three-Address Code, C source code, or machine code), while detecting lexical, syntactic, and semantic errors.
 
----
+### Compiler Architecture: Front-End vs. Back-End
 
-## 2. The 4-Phase Pipeline Architecture
+A modern compiler pipeline is divided into two main parts:
 
-Lumis is structured into 4 distinct phases:
+1. **Front-End (Language-Dependent)**:
+   - **Lexical Analysis (Scanner)**: Converts character stream to token stream.
+   - **Syntax Analysis (Parser)**: Verifies grammar and builds an Abstract Syntax Tree (AST).
+   - **Semantic Analysis (Type Checker)**: Enforces scope, type, and declaration rules using a Symbol Table.
+
+2. **Back-End (Machine-Dependent or IR-based)**:
+   - **Intermediate Code Generation (IR / TAC)**: Emits machine-independent Three-Address Code.
+   - **In-Memory AST Interpreter**: Executes statements directly for immediate output.
+   - **C Code Generation & GCC Compiler Driver**: Emits valid C code and compiles native binaries.
 
 ```text
-               +----------------------------------+
-               |        Source File (.lum)        |
-               +----------------------------------+
-                                |
-                                v
-               +----------------------------------+
-               |  Phase 1: Lexical Analysis       |  Flex (lexer.l)
-               |  (Converts text into Tokens)     |
-               +----------------------------------+
-                                |  Token Stream
-                                v
-               +----------------------------------+
-               |  Phase 2: Syntax Analysis        |  Bison (parser.y)
-               |  (Constructs AST Tree)           |  (ast.h / ast.c)
-               +----------------------------------+
-                                |  AST Tree
-                                v
-               +----------------------------------+
-               |  Phase 3: Semantic Analysis      |  (semantic.c)
-               |  (Type & Scope Validation)       |  (symtab.c)
-               +----------------------------------+
-                                |  Validated AST
-                                v
-               +----------------------------------+
-               |  Phase 4: Code Generation        |  (codegen.c)
-               |  (Emits Three-Address Code / TAC) |
-               +----------------------------------+
+  +-------------------------------------------------------------------------------+
+  |                                 FRONT END                                     |
+  |  Source (.lum) ---> Lexer ---> Tokens ---> Parser ---> AST ---> Type Checker  |
+  +-------------------------------------------------------------------------------+
+                                                                 │
+                                                                 ▼
+  +-------------------------------------------------------------------------------+
+  |                                 BACK END                                      |
+  |  AST ---> [1] TAC Generator  |  [2] Interpreter (-r)  |  [3] C & GCC (-o)     |
+  +-------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 3. Step-by-Step Example
+## 2. Theoretical Foundations (Compiler Design Course Mapping)
 
-Let's trace what happens when Lumis compiles this simple program:
+| Compiler Phase | Formal CS Concept | Tool / Source File in Lumis |
+| -------------- | ----------------- | --------------------------- |
+| **Lexical Analysis** | Regular Expressions, Nondeterministic/Deterministic Finite Automata (DFA) | Flex (`src/lexer.l`) |
+| **Syntax Analysis** | Context-Free Grammars (CFG), Backus-Naur Form (BNF), LALR(1) Parsing | Bison (`src/parser.y`) |
+| **AST Construction** | Syntax-Directed Translation (SDT), Abstract Syntax Trees | `src/ast.h`, `src/ast.c` |
+| **Semantic Analysis** | Symbol Tables, Scope Chains, Type Systems & Promotion | `src/symtab.c`, `src/semantic.c` |
+| **Code Generation** | Three-Address Code (TAC), Linear Quadruples/Triples | `src/codegen.c` |
+| **Interpretation** | Tree-Walking Interpreter, Scope Environments | `src/interp.c` |
+| **Target Compilation** | Target Code Generation, C Backend, Linker Driver | `src/c_backend.c` |
+
+---
+
+## 3. End-to-End Walkthrough of a Lumis Program
+
+Consider the following Lumis code (`hello.lum`):
 
 ```c
 int main() {
-    int x;
-    x = 10 + 20;
-    print(x);
+    int x = 10;
+    int y = 20;
+    int sum = x + y;
+    print(sum);
     return 0;
 }
 ```
 
-### Phase 1: Lexical Analysis (Scanning)
-
-The **Lexer** (`lexer.l`) reads characters and groups them into meaningful chunks called **Tokens**:
-
-- `int` $\rightarrow$ `INT` keyword
+### Phase 1: Lexical Analysis (Flex Scanner — `src/lexer.l`)
+The lexer reads the character stream and converts it into a token stream:
+- `int` $\rightarrow$ `INT`
 - `main` $\rightarrow$ `ID("main")`
-- `(` $\rightarrow$ `LPAREN`
-- `)` $\rightarrow$ `RPAREN`
-- `{` $\rightarrow$ `LBRACE`
-- `x = 10 + 20;` $\rightarrow$ `ID("x")`, `ASSIGN`, `INT_NUM(10)`, `PLUS`, `INT_NUM(20)`, `SEMI`
+- `(` $\rightarrow$ `LPAREN`, `)` $\rightarrow$ `RPAREN`, `{` $\rightarrow$ `LBRACE`
+- `int x = 10;` $\rightarrow$ `INT`, `ID("x")`, `ASSIGN`, `INT_NUM(10)`, `SEMI`
+- `sum = x + y;` $\rightarrow$ `ID("sum")`, `ASSIGN`, `ID("x")`, `PLUS`, `ID("y")`, `SEMI`
+- `print(sum);` $\rightarrow$ `PRINT`, `LPAREN`, `ID("sum")`, `RPAREN`, `SEMI`
+- `return 0;` $\rightarrow$ `RETURN`, `INT_NUM(0)`, `SEMI`
 
-### Phase 2: Syntax Analysis (Parsing)
-
-The **Parser** (`parser.y`) checks if tokens match the rules of our programming grammar. As rules match, it builds an **Abstract Syntax Tree (AST)**:
+### Phase 2: Syntax Analysis (Bison Parser — `src/parser.y`)
+The parser matches the token sequence against Lumis BNF grammar rules using an LALR(1) parsing table and constructs the **AST**:
 
 ```text
 Program
   FunctionDecl: main -> int
     Block
-      VarDecl: x : int
-      Assign: x
-        BinaryOp: +
-          Literal(int): 10
-          Literal(int): 20
+      VarDecl: x : int = 10
+      VarDecl: y : int = 20
+      VarDecl: sum : int = x + y
       PrintStmt
-        VarRef: x
+        VarRef: sum
       ReturnStmt
         Literal(int): 0
 ```
 
-### Phase 3: Semantic Analysis (Meaning & Rules)
+### Phase 3: Semantic Analysis & Symbol Table (`src/semantic.c` & `src/symtab.c`)
+1. Creates `global` scope and registers function `main : int`.
+2. Creates function scope `main` and registers symbols:
+   - `x : SYM_VARIABLE, TYPE_INT`
+   - `y : SYM_VARIABLE, TYPE_INT`
+   - `sum : SYM_VARIABLE, TYPE_INT`
+3. Checks that `x` and `y` are declared before referenced in `x + y`.
+4. Verifies that `x + y` produces `TYPE_INT`, matching `sum`'s declared type.
+5. Verifies `return 0;` matches function return type `int`.
 
-The **Semantic Analyzer** (`semantic.c`) traverses the AST:
+### Phase 4: Back-End Modes
 
-1. Registers `main` and `x` into the **Symbol Table**.
-2. Checks that `x` is declared before being assigned.
-3. Checks that `10` (int) + `20` (int) yields `int`, matching `x` (int).
-
-### Phase 4: Code Generation (TAC)
-
-The **Code Generator** (`codegen.c`) walks the AST and emits **Three-Address Code (TAC)**:
-
+#### Mode 1: Three-Address Code (TAC Output — Default)
 ```text
 FUNC main:
-    t1 = 10 + 20
-    x = t1
-    PRINT x
+    x = 10
+    y = 20
+    t1 = x + y
+    sum = t1
+    PRINT sum
     RETURN 0
     END FUNC
 ```
 
+#### Mode 2: In-Memory Interpreter Execution (`./lumis -r hello.lum`)
+```text
+=== PROGRAM EXECUTION ===
+30
+=========================
+Program finished with exit code 0
+```
+
+#### Mode 3: Native Binary Generation (`./lumis -o hello hello.lum`)
+Translates AST to C code, invokes `gcc`, and builds standalone executable `./hello`:
+```bash
+$ ./hello
+30
+```
+
 ---
 
-## Next Steps
+## 4. Key Takeaways for Course Exams & Presentations
 
-- Read [02_PROJECT_STRUCTURE.md](./02_PROJECT_STRUCTURE.md) to understand which file handles what!
+1. **Why use Flex and Bison?** Flex uses DFAs to generate an $O(n)$ scanner. Bison generates an LALR(1) parser that handles context-free grammars deterministically.
+2. **Why use an AST instead of evaluating during parsing?** Separating parsing from execution allows multiple analysis passes (semantic checks, optimizations, multiple backend targets).
+3. **What is Three-Address Code (TAC)?** An intermediate representation where instructions have at most 3 operands, making it machine-independent and easy to translate to machine instructions.

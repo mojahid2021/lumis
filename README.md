@@ -12,7 +12,7 @@ It is implemented in **C** using **Flex** (lexer) and **Bison** (parser). The co
 
 ## 1. Features
 
-- **Types:** `int`, `float`, `char`, `bool`
+- **Types:** `int`, `float`, `char`, `bool`, `void`
 - **Statements:** variable declarations, assignments, `if`/`else`, `while`, `for`, `return`, `print`
 - **Expressions:** arithmetic, relational, logical operators with correct precedence
 - **Functions:** definitions, parameters, calls, return values
@@ -22,23 +22,43 @@ It is implemented in **C** using **Flex** (lexer) and **Bison** (parser). The co
 
 ---
 
-## 2. Prerequisites
+## 2. Prerequisites & Platform Setup
 
-You need the standard compiler-construction toolchain:
+Lumis requires the standard C compiler-construction toolchain (`flex`, `bison`, `gcc`/`clang`, `make`).
 
-| Tool     | Purpose                         | Install (Debian/Ubuntu)            |
-|----------|---------------------------------|------------------------------------|
-| `flex`   | Lexical analyzer generator      | `sudo apt install flex`            |
-| `bison`  | Parser generator                | `sudo apt install bison`           |
-| `gcc`    | C compiler                      | `sudo apt install gcc`             |
-| `make`   | Build automation                | `sudo apt install make`            |
+### OS Installation Matrix
 
-Verify everything is available:
+| OS Platform | Installation Command |
+|-------------|----------------------|
+| **Linux (Ubuntu / Debian)** | `sudo apt update && sudo apt install -y gcc flex bison make` |
+| **Linux (Fedora)** | `sudo dnf install gcc flex bison make` |
+| **Linux (Arch Linux)** | `sudo pacman -S gcc flex bison make` |
+| **macOS (Homebrew)** | `xcode-select --install` <br> `brew install flex bison gcc make` |
+| **Windows (WSL - Recommended)** | `wsl --install` <br> `sudo apt update && sudo apt install -y gcc flex bison make` |
+| **Windows (MSYS2 / MinGW)** | `pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-flex mingw-w64-x86_64-bison make` |
+| **Windows (Chocolatey)** | `choco install winflexbison mingw make` |
+
+### macOS PATH Setup (Homebrew)
+On macOS, Homebrew installs `bison` and `flex` in non-standard keg paths. Export PATH before building:
+
+```bash
+# Apple Silicon Macs (M1/M2/M3/M4):
+export PATH="/opt/homebrew/opt/bison/bin:/opt/homebrew/opt/flex/bin:$PATH"
+
+# Intel Macs:
+export PATH="/usr/local/opt/bison/bin:/usr/local/opt/flex/bin:$PATH"
+```
+
+### Windows Setup Notes
+- **WSL (Recommended)**: Open WSL terminal (Ubuntu) and run Linux commands. Lumis produces native `./lumis` binaries directly.
+- **MSYS2 / Git Bash / CMD**: Make sure `flex`, `bison`, `gcc`, and `make` are added to your Windows `%PATH%`. Running `make` generates `lumis.exe`.
+
+### Verification Command
 
 ```bash
 flex --version
 bison --version
-gcc --version
+gcc --version || clang --version
 make --version
 ```
 
@@ -70,6 +90,8 @@ make clean
 
 ## 4. Usage
 
+### Inspect Compiler Pipeline (Default)
+
 ```bash
 ./lumis <source-file.lum>
 ```
@@ -87,11 +109,115 @@ The compiler prints, in order:
 3. **Symbol table** summary
 4. **Three-Address Code** (the generated "assembly-like" output)
 
+### Compile & Execute Program Directly (`-r` / `--run`)
+
+```bash
+./lumis -r tests/valid/hello.lum
+```
+
+Output:
+
+```text
+=== PROGRAM EXECUTION ===
+42
+=========================
+Program finished with exit code 0
+```
+
+### Compile to Standalone Native Binary (`-o <output>`)
+
+```bash
+./lumis -o hello tests/valid/hello.lum
+./hello
+```
+
+Output:
+
+```text
+42
+```
+
 If an error occurs at any phase, the compiler stops and reports it with the line number.
 
 ---
 
-## 5. Example Program
+## 5. Lumis Language Syntax Reference (`.lum` Code)
+
+Writing `.lum` programs is fast and intuitive:
+
+### Declaring & Using Variables
+
+Variables can be declared with or without initial values:
+
+```c
+int main() {
+    // 1. Uninitialized variable declarations
+    int count;
+    float total;
+
+    // 2. Initialized variable declarations
+    int age = 20;
+    float pi = 3.14159;
+    char letter = 'A';
+    bool isReady = true;
+
+    // 3. Assignments
+    count = age + 10;
+    total = pi * 2.0;
+
+    // 4. Output
+    print(count);      // Prints: 30
+    print(isReady);    // Prints: true
+
+    return 0;
+}
+```
+
+### Control Flow (If / Else, Loops)
+
+```c
+int main() {
+    // If / Else
+    int score = 85;
+    if (score >= 90) {
+        print(1);
+    } else {
+        print(0);
+    }
+
+    // While loop
+    int i = 1;
+    while (i <= 3) {
+        print(i);
+        i = i + 1;
+    }
+
+    // For loop
+    for (int j = 0; j < 3; j = j + 1) {
+        print(j);
+    }
+
+    return 0;
+}
+```
+
+### Functions
+
+```c
+int square(int n) {
+    return n * n;
+}
+
+int main() {
+    int val = square(5);
+    print(val); // 25
+    return 0;
+}
+```
+
+---
+
+## 6. Example Program Pipeline Output
 
 `tests/valid/hello.lum`:
 
@@ -140,32 +266,44 @@ RETURN 0
 
 ---
 
-## 6. Project Structure
+## 7. Project Structure & Beginner Guides
 
 ```text
 lumis/
 ├── Makefile                  # Build rules
-├── README.md                 # This file
+├── README.md                 # Project documentation & reference
+├── Mini Compiler (Lumis).md  # Project specification & proposal
 ├── docs/
-│   ├── GRAMMAR.md            # Full language grammar
-│   └── beginner_guide/       # Step-by-step guides for compiler concepts
+│   ├── GRAMMAR.md            # Full language grammar & syntax reference
+│   └── beginner_guide/       # Step-by-step guides for Compiler Design course
+│       ├── 01_COMPILER_OVERVIEW.md         # Theory, architecture & pipeline
+│       ├── 02_PROJECT_STRUCTURE.md         # File-by-file breakdown & data flow
+│       ├── 03_LEXER_AND_PARSER.md          # Flex & Bison deep dive
+│       ├── 04_SEMANTIC_ANALYSIS_AND_SYMTAB.md # Scope & type checking
+│       ├── 05_CODE_GENERATION.md          # TAC, Interpreter & C Backend
+│       ├── 06_HOW_TO_RUN_AND_EXTEND.md     # How to run, test & add features
+│       └── 07_COMPILER_DESIGN_VIVA_PREP.md # 25+ Exam defense & viva Q&As
 ├── src/
-│   ├── main.c                # Compiler driver / entry point
-│   ├── lexer.l               # Flex — tokenizer
-│   ├── parser.y              # Bison — grammar + AST builder
-│   ├── ast.h / ast.c         # Abstract Syntax Tree
-│   ├── symtab.h / symtab.c   # Symbol table
-│   ├── semantic.h / semantic.c  # Type checker
-│   └── codegen.h / codegen.c    # Three-address code generator
+│   ├── main.c                # Driver entry point & CLI options
+│   ├── lexer.l               # Flex — scanner (DFAs & Regex)
+│   ├── parser.y              # Bison — LALR(1) parser & AST builder
+│   ├── ast.h / ast.c         # Abstract Syntax Tree structures
+│   ├── symtab.h / symtab.c   # Symbol table & scope management
+│   ├── semantic.h / semantic.c  # Semantic analyzer & type checker
+│   ├── codegen.h / codegen.c    # Three-address code generator (TAC)
+│   ├── interp.h / interp.c       # AST Interpreter / Execution Engine (-r)
+│   └── c_backend.h / c_backend.c # C Backend & GCC Binary Compiler (-o)
 └── tests/
-    ├── valid/                # Programs that should compile
+    ├── valid/                # Valid sample programs (.lum)
+    │   ├── variables.lum     # Comprehensive syntax reference
+    │   ├── void_func.lum     # Void function reference
     │   ├── hello.lum
     │   ├── arithmetic.lum
     │   ├── ifelse.lum
     │   ├── whileloop.lum
     │   ├── forloop.lum
     │   └── functions.lum
-    └── invalid/              # Programs that should fail each phase
+    └── invalid/              # Deliberately invalid programs (.lum)
         ├── lexicalError.lum
         ├── syntaxError.lum
         ├── undeclared.lum
@@ -174,7 +312,7 @@ lumis/
 
 ---
 
-## 7. The Pipeline, Phase by Phase
+## 8. The Pipeline, Phase by Phase
 
 ### Phase 1 — Lexical Analysis (`lexer.l`)
 
@@ -208,7 +346,7 @@ LABEL L2
 
 ---
 
-## 8. Sample Tests
+## 9. Sample Tests
 
 Run all sample tests automatically:
 
@@ -232,20 +370,22 @@ for f in tests/invalid/*.lum; do echo "=== $f ==="; ./lumis "$f" || true; done
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Problem | Fix |
 | --- | --- |
-| `flex: command not found` | `sudo apt install flex` |
-| `bison: command not found` | `sudo apt install bison` |
+| `flex: command not found` | **Linux**: `sudo apt install flex` <br> **macOS**: `brew install flex` & export PATH <br> **Windows**: Install MSYS2 or `winflexbison` via Chocolatey |
+| `bison: command not found` | **Linux**: `sudo apt install bison` <br> **macOS**: `brew install bison` & export PATH <br> **Windows**: Install MSYS2 or `winflexbison` via Chocolatey |
+| macOS outdated Bison error | Run `export PATH="/opt/homebrew/opt/bison/bin:$PATH"` |
+| Windows `win_flex` / `win_bison` | Rename or alias `win_flex.exe` to `flex.exe` and `win_bison.exe` to `bison.exe` or use WSL |
 | `implicit declaration of function 'strdup'` | Ensure POSIX feature macros (`-D_POSIX_C_SOURCE=200809L`) are included — run `make clean && make` |
-| `undefined reference to yylex` / `yacc` | Make sure `main.c` includes the generated headers correctly — just run `make clean && make` |
+| `undefined reference to yylex` / `yacc` | Make sure `main.c` includes generated headers — run `make clean && make` |
 | `conflicting types for yylex` | Don't define `yylex` yourself; Flex generates it |
 | Token / parse errors | Open `docs/GRAMMAR.md` to see the supported syntax |
 
 ---
 
-## 10. Extending Lumis
+## 11. Extending Lumis
 
 Some natural next steps:
 
@@ -258,6 +398,6 @@ The code is organized so each extension usually touches one or two files at most
 
 ---
 
-## 11. License
+## 12. License
 
 This is a teaching project — feel free to copy, modify, and learn from it.

@@ -57,4 +57,7 @@ SymbolTable
    - Ensures the number of arguments matches the declared function parameters.
    - Ensures argument types match parameter types.
 5. **Return Type Checking**:
-   - Compares the returned expression type against the function's declared return type.
+   - Compares returned expression types against function return types.
+   - Enforces `void` function return rules (`return;` without expressions for `void` functions; returning expressions in `void` functions is prohibited).
+6. **Void Variable Prohibition**:
+   - Prevents declaring variables of type `void` (e.g., `void x;` triggers a semantic error).

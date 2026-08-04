@@ -84,3 +84,17 @@ LABEL L2:
 - `new_label()`: Generates unique jump labels (`L1`, `L2`, `L3`, ...).
 - `gen_expr(AstNode *node, FILE *out)`: Emits TAC for expressions and returns the temporary variable or constant holding the result.
 - `gen_stmt(AstNode *node, FILE *out)`: Recursively walks statement nodes in the AST and outputs structured TAC instructions.
+
+---
+
+## 5. Execution Engine & C Binary Backend
+
+In addition to emitting machine-independent TAC, Lumis provides two back-end execution modes:
+
+### In-Memory AST Interpreter (`src/interp.c`)
+- **Invoked with**: `./lumis -r <file.lum>`
+- **Mechanism**: Walks the validated AST in-memory using recursive tree traversal, maintaining a dynamic scope stack of variable values, and executes statements (loops, conditionals, functions, `print`) immediately.
+
+### C Backend & GCC Binary Compiler (`src/c_backend.c`)
+- **Invoked with**: `./lumis -o <output_binary> <file.lum>`
+- **Mechanism**: Translates Lumis AST nodes into standard C code, maps `print(...)` to C11 `_Generic` formatted printf functions, writes to a temporary `.c` source file, and invokes `gcc` to produce a standalone native binary executable.

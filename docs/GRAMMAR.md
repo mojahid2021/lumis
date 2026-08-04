@@ -1,11 +1,101 @@
-# Lumis Language Grammar
+# Lumis Language Grammar & Syntax Reference
 
-This document defines the grammar of the Lumis language in **BNF** form, plus
-the regular expressions used by the lexer.
+This document defines the formal grammar of the **Lumis** programming language in **BNF** form, regular expressions used by the lexer, type rules, and practical `.lum` source code examples.
 
 ---
 
-## 1. Lexical Tokens (Flex Regular Expressions)
+## 1. Lumis Language Overview & Syntax Guide
+
+Lumis is a C-like compiled language. Source files use the `.lum` extension.
+
+### Data Types
+Lumis supports five primitive data types:
+- `int`: Signed 32-bit integers (e.g. `42`, `-10`, `0`)
+- `float`: Floating point numbers (e.g. `3.14`, `-0.5`)
+- `char`: Single ASCII characters (e.g. `'a'`, `'Z'`, `'0'`)
+- `bool`: Boolean values (`true` or `false`)
+- `void`: Used for functions that return no value (`void greet() { ... }`)
+
+### Variable Declarations & Assignments
+Variables can be declared without initialization, or declared and initialized on a single line:
+
+```c
+// Uninitialized declarations
+int count;
+float temperature;
+char initial;
+bool isFinished;
+
+// Initialized declarations
+int age = 25;
+float pi = 3.14159;
+char letter = 'K';
+bool isActive = true;
+
+// Assignments
+count = 10;
+temperature = 98.6;
+isFinished = false;
+```
+
+### Operators & Expressions
+- **Arithmetic:** `+`, `-`, `*`, `/`, `%` (modulo requires `int`)
+- **Relational:** `<`, `>`, `<=`, `>=`, `==`, `!=`
+- **Logical:** `&&`, `||`, `!`
+- **Unary:** `-` (negation), `!` (logical NOT)
+
+Example:
+```c
+int a = 10;
+int b = 20;
+int sum = a + b * 2;          // Result: 50
+bool valid = (sum > 30) && !false;
+```
+
+### Control Flow
+- **If / Else Statements:**
+  ```c
+  if (score >= 90) {
+      print(1);
+  } else {
+      print(0);
+  }
+  ```
+
+- **While Loops:**
+  ```c
+  int i = 1;
+  while (i <= 5) {
+      print(i);
+      i = i + 1;
+  }
+  ```
+
+- **For Loops:**
+  ```c
+  for (int i = 0; i < 5; i = i + 1) {
+      print(i);
+  }
+  ```
+
+### Functions
+Functions specify a return type, a unique identifier name, a parameter list, and a block body:
+
+```c
+int multiply(int x, int y) {
+    return x * y;
+}
+
+int main() {
+    int res = multiply(6, 7);
+    print(res);
+    return 0;
+}
+```
+
+---
+
+## 2. Lexical Tokens (Flex Regular Expressions)
 
 | Token        | Pattern                          | Example        |
 |--------------|----------------------------------|----------------|

@@ -1,0 +1,36 @@
+// Lumis Reference Program — Variables, Data Types, and Syntax
+// Demonstrates variable declarations, initializations, types, and operations.
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    // 1. Primitive Variable Declarations & Initializations
+    int age = 25;
+    float pi = 3.14;
+    char grade = 'A';
+    bool isActive = true;
+
+    // 2. Uninitialized Variable Declarations
+    int total;
+    float area;
+    bool isPassed;
+
+    // 3. Variable Assignments
+    total = age + 15;
+    area = pi * 4.0;
+    isPassed = (age >= 18) && isActive;
+
+    // 4. Function Call with Variables
+    int sum = add(total, 10);
+
+    // 5. Printing Values
+    print(total);       // 40
+    print(area);        // 12.56
+    print(grade);       // A
+    print(isPassed);    // true
+    print(sum);         // 50
+
+    return 0;
+}

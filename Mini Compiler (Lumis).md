@@ -85,9 +85,12 @@ The parser consumes the token stream and matches it against a context-free gramm
 
 The AST is traversed to enforce rules that context-free grammars cannot express: type checking, variable declaration-before-use, scope resolution, and function signature matching. A symbol table is built and consulted during this traversal, and semantic errors (e.g., type mismatches, undeclared variables, redeclaration) are reported.
 
-### **6.4 Code Generation** {#code-generation}
+### **6.4 Code Generation, Execution & Binary Output** {#code-generation}
 
-Once a program passes semantic analysis, the compiler walks the AST to emit intermediate code, using a three-address code representation, which can optionally be translated further into target assembly instructions. The generated code preserves the control flow and expression evaluation order of the original program.
+Once a program passes semantic analysis, the compiler supports three output modes:
+1. **Three-Address Code (TAC):** Walks the AST to emit intermediate instructions.
+2. **In-Memory AST Execution (`-r` / `--run`):** Interprets and executes Lumis program instructions directly.
+3. **Native Binary Compilation (`-o <output>`):** Translates AST into C and invokes GCC to produce native executable binaries.
 
 ## **7. Methodology and Work Plan** {#methodology-and-work-plan}
 

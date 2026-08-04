@@ -1,0 +1,10 @@
+// Void function test
+void greet() {
+    print(100);
+    return;
+}
+
+int main() {
+    greet();
+    return 0;
+}

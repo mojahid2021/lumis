@@ -32,7 +32,7 @@ int syntax_errors = 0;
 }
 
 /* Tokens */
-%token INT FLOAT CHAR BOOL
+%token INT FLOAT CHAR BOOL VOID
 %token IF ELSE WHILE FOR RETURN PRINT
 %token <intval> TRUE_LIT FALSE_LIT INT_NUM
 %token <floatval> FLOAT_NUM
@@ -125,6 +125,7 @@ type:
     | FLOAT { $$ = TYPE_FLOAT; }
     | CHAR  { $$ = TYPE_CHAR; }
     | BOOL  { $$ = TYPE_BOOL; }
+    | VOID  { $$ = TYPE_VOID; }
     ;
 
 stmt_list:
@@ -155,12 +156,8 @@ decl_stmt:
         free($2);
     }
     | type ID ASSIGN expr SEMI {
-        /* Creates decl node + assign node wrapped in a block */
-        AstNode *decl = ast_new_var_decl(yylineno, $2, $1);
-        AstNode *assign = ast_new_assign(yylineno, $2, $4);
-        $$ = ast_new_block(yylineno);
-        ast_add_child($$, decl);
-        ast_add_child($$, assign);
+        $$ = ast_new_var_decl(yylineno, $2, $1);
+        ast_add_child($$, $4);
         free($2);
     }
     ;

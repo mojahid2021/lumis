@@ -127,7 +127,11 @@ static void gen_stmt(AstNode *node, FILE *out) {
             break;
 
         case NODE_VAR_DECL:
-            /* Optionally emit stack allocation note */
+            if (node->child_count > 0) {
+                char *rhs = gen_expr(node->children[0], out);
+                fprintf(out, "    %s = %s\n", node->name, rhs);
+                free(rhs);
+            }
             break;
 
         case NODE_ASSIGN: {

@@ -213,10 +213,26 @@ static void traverse_node(AstNode *node, SymbolTable *symtab) {
         }
 
         case NODE_VAR_DECL:
+            if (node->data_type == TYPE_VOID) {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Variable '%s' cannot be declared with 'void' type", node->name);
+                report_error(node->line, msg);
+            }
             if (!symtab_insert(symtab, node->name, SYM_VARIABLE, node->data_type, node->line)) {
                 char msg[256];
                 snprintf(msg, sizeof(msg), "Redeclaration of variable '%s' in current scope", node->name);
                 report_error(node->line, msg);
+            }
+            if (node->child_count > 0) {
+                DataType init_type = check_expression(node->children[0], symtab);
+                if (init_type != TYPE_VOID && node->data_type != init_type) {
+                    if (!(node->data_type == TYPE_FLOAT && init_type == TYPE_INT)) {
+                        char msg[256];
+                        snprintf(msg, sizeof(msg), "Type mismatch in initialization of '%s': expected %s, got %s",
+                                 node->name, type_name(node->data_type), type_name(init_type));
+                        report_error(node->line, msg);
+                    }
+                }
             }
             break;
 
@@ -277,13 +293,23 @@ static void traverse_node(AstNode *node, SymbolTable *symtab) {
         }
 
         case NODE_RETURN:
-            if (node->child_count > 0) {
-                DataType t = check_expression(node->children[0], symtab);
-                if (t != TYPE_VOID && t != current_func_return_type) {
-                    char msg[256];
-                    snprintf(msg, sizeof(msg), "Return type mismatch: expected %s, got %s",
-                             type_name(current_func_return_type), type_name(t));
-                    report_error(node->line, msg);
+            if (current_func_return_type == TYPE_VOID) {
+                if (node->child_count > 0) {
+                    report_error(node->line, "Void function cannot return a value");
+                }
+            } else {
+                if (node->child_count == 0) {
+                    report_error(node->line, "Non-void function must return a value");
+                } else {
+                    DataType t = check_expression(node->children[0], symtab);
+                    if (t != TYPE_VOID && t != current_func_return_type) {
+                        if (!(current_func_return_type == TYPE_FLOAT && t == TYPE_INT)) {
+                            char msg[256];
+                            snprintf(msg, sizeof(msg), "Return type mismatch: expected %s, got %s",
+                                     type_name(current_func_return_type), type_name(t));
+                            report_error(node->line, msg);
+                        }
+                    }
                 }
             }
             break;
