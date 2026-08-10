@@ -19,6 +19,7 @@ typedef struct Value {
         double float_val;
         char char_val;
         int bool_val;
+        char *str_val;
     };
 } Value;
 
@@ -52,6 +53,7 @@ static void env_free(Env *env) {
         VarSymbol *tmp = curr;
         curr = curr->next;
         free(tmp->name);
+        if (tmp->val.type == TYPE_STRING) free(tmp->val.str_val);
         free(tmp);
     }
     free(env);
@@ -60,6 +62,9 @@ static void env_free(Env *env) {
 static void env_define(Env *env, const char *name, Value val) {
     VarSymbol *s = (VarSymbol *)malloc(sizeof(VarSymbol));
     s->name = strdup(name);
+    if (val.type == TYPE_STRING) {
+        val.str_val = strdup(val.str_val ? val.str_val : "");
+    }
     s->val = val;
     s->next = env->vars;
     env->vars = s;
@@ -76,7 +81,13 @@ static VarSymbol *env_lookup_sym(Env *env, const char *name) {
 
 static Value env_get(Env *env, const char *name) {
     VarSymbol *s = env_lookup_sym(env, name);
-    if (s) return s->val;
+    if (s) {
+        Value v = s->val;
+        if (v.type == TYPE_STRING) {
+            v.str_val = strdup(v.str_val ? v.str_val : "");
+        }
+        return v;
+    }
     Value v = { .type = TYPE_INT, .int_val = 0 };
     return v;
 }
@@ -84,6 +95,10 @@ static Value env_get(Env *env, const char *name) {
 static void env_set(Env *env, const char *name, Value val) {
     VarSymbol *s = env_lookup_sym(env, name);
     if (s) {
+        if (s->val.type == TYPE_STRING) free(s->val.str_val);
+        if (val.type == TYPE_STRING) {
+            val.str_val = strdup(val.str_val ? val.str_val : "");
+        }
         s->val = val;
     } else {
         env_define(env, name, val);
@@ -112,10 +127,11 @@ static Value eval_expr(AstNode *node, Env *env, InterpState *st) {
         case NODE_LITERAL:
             res.type = node->data_type;
             switch (node->data_type) {
-                case TYPE_INT:   res.int_val   = node->int_value; break;
-                case TYPE_FLOAT: res.float_val = node->float_value; break;
-                case TYPE_CHAR:  res.char_val  = node->char_value; break;
-                case TYPE_BOOL:  res.bool_val  = node->bool_value; break;
+                case TYPE_INT:    res.int_val   = node->int_value; break;
+                case TYPE_FLOAT:  res.float_val = node->float_value; break;
+                case TYPE_CHAR:   res.char_val  = node->char_value; break;
+                case TYPE_BOOL:   res.bool_val  = node->bool_value; break;
+                case TYPE_STRING: res.str_val   = strdup(node->string_value ? node->string_value : ""); break;
                 default: break;
             }
             return res;
@@ -139,6 +155,54 @@ static Value eval_expr(AstNode *node, Env *env, InterpState *st) {
         case NODE_BINARY_OP: {
             Value l = eval_expr(node->children[0], env, st);
             Value r = eval_expr(node->children[1], env, st);
+
+            if (l.type == TYPE_STRING || r.type == TYPE_STRING) {
+                if (node->binop == OP_ADD) {
+                    char buf1[256], buf2[256];
+                    const char *s1 = "";
+                    const char *s2 = "";
+
+                    if (l.type == TYPE_STRING) s1 = l.str_val ? l.str_val : "";
+                    else if (l.type == TYPE_INT) { snprintf(buf1, sizeof(buf1), "%d", l.int_val); s1 = buf1; }
+                    else if (l.type == TYPE_FLOAT) { snprintf(buf1, sizeof(buf1), "%g", l.float_val); s1 = buf1; }
+                    else if (l.type == TYPE_CHAR) { snprintf(buf1, sizeof(buf1), "%c", l.char_val); s1 = buf1; }
+                    else if (l.type == TYPE_BOOL) { s1 = l.bool_val ? "true" : "false"; }
+
+                    if (r.type == TYPE_STRING) s2 = r.str_val ? r.str_val : "";
+                    else if (r.type == TYPE_INT) { snprintf(buf2, sizeof(buf2), "%d", r.int_val); s2 = buf2; }
+                    else if (r.type == TYPE_FLOAT) { snprintf(buf2, sizeof(buf2), "%g", r.float_val); s2 = buf2; }
+                    else if (r.type == TYPE_CHAR) { snprintf(buf2, sizeof(buf2), "%c", r.char_val); s2 = buf2; }
+                    else if (r.type == TYPE_BOOL) { s2 = r.bool_val ? "true" : "false"; }
+
+                    char *cat = (char *)malloc(strlen(s1) + strlen(s2) + 1);
+                    strcpy(cat, s1);
+                    strcat(cat, s2);
+
+                    res.type = TYPE_STRING;
+                    res.str_val = cat;
+                    if (l.type == TYPE_STRING && l.str_val) free(l.str_val);
+                    if (r.type == TYPE_STRING && r.str_val) free(r.str_val);
+                    return res;
+                } else if (node->binop == OP_EQ || node->binop == OP_NEQ || node->binop == OP_LT || node->binop == OP_GT || node->binop == OP_LE || node->binop == OP_GE) {
+                    const char *s1 = (l.type == TYPE_STRING && l.str_val) ? l.str_val : "";
+                    const char *s2 = (r.type == TYPE_STRING && r.str_val) ? r.str_val : "";
+                    int cmp = strcmp(s1, s2);
+
+                    res.type = TYPE_BOOL;
+                    switch (node->binop) {
+                        case OP_EQ:  res.bool_val = (cmp == 0); break;
+                        case OP_NEQ: res.bool_val = (cmp != 0); break;
+                        case OP_LT:  res.bool_val = (cmp < 0); break;
+                        case OP_GT:  res.bool_val = (cmp > 0); break;
+                        case OP_LE:  res.bool_val = (cmp <= 0); break;
+                        case OP_GE:  res.bool_val = (cmp >= 0); break;
+                        default: break;
+                    }
+                    if (l.type == TYPE_STRING && l.str_val) free(l.str_val);
+                    if (r.type == TYPE_STRING && r.str_val) free(r.str_val);
+                    return res;
+                }
+            }
 
             int is_float = (l.type == TYPE_FLOAT || r.type == TYPE_FLOAT);
             double lf = (l.type == TYPE_FLOAT) ? l.float_val : (l.type == TYPE_CHAR ? l.char_val : l.int_val);
@@ -294,11 +358,12 @@ static void exec_stmt(AstNode *node, Env *env, InterpState *st) {
         case NODE_PRINT: {
             Value val = eval_expr(node->children[0], env, st);
             switch (val.type) {
-                case TYPE_INT:   printf("%d\n", val.int_val); break;
-                case TYPE_FLOAT: printf("%g\n", val.float_val); break;
-                case TYPE_CHAR:  printf("%c\n", val.char_val); break;
-                case TYPE_BOOL:  printf("%s\n", val.bool_val ? "true" : "false"); break;
-                default:         printf("%d\n", val.int_val); break;
+                case TYPE_INT:    printf("%d\n", val.int_val); break;
+                case TYPE_FLOAT:  printf("%g\n", val.float_val); break;
+                case TYPE_CHAR:   printf("%c\n", val.char_val); break;
+                case TYPE_BOOL:   printf("%s\n", val.bool_val ? "true" : "false"); break;
+                case TYPE_STRING: printf("%s\n", val.str_val ? val.str_val : ""); if (val.str_val) free(val.str_val); break;
+                default:          printf("%d\n", val.int_val); break;
             }
             break;
         }

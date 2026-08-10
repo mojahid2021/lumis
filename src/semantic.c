@@ -51,11 +51,22 @@ static DataType check_expression(AstNode *node, SymbolTable *symtab) {
             }
 
             switch (node->binop) {
-                case OP_ADD: case OP_SUB: case OP_MUL: case OP_DIV:
+                case OP_ADD:
+                    if (t1 == TYPE_STRING || t2 == TYPE_STRING) {
+                        node->data_type = TYPE_STRING;
+                    } else if ((t1 == TYPE_INT || t1 == TYPE_FLOAT) && (t2 == TYPE_INT || t2 == TYPE_FLOAT)) {
+                        node->data_type = (t1 == TYPE_FLOAT || t2 == TYPE_FLOAT) ? TYPE_FLOAT : TYPE_INT;
+                    } else {
+                        report_error(node->line, "Addition '+' requires numeric or string types");
+                        node->data_type = TYPE_VOID;
+                    }
+                    break;
+
+                case OP_SUB: case OP_MUL: case OP_DIV:
                     if ((t1 == TYPE_INT || t1 == TYPE_FLOAT) && (t2 == TYPE_INT || t2 == TYPE_FLOAT)) {
                         node->data_type = (t1 == TYPE_FLOAT || t2 == TYPE_FLOAT) ? TYPE_FLOAT : TYPE_INT;
                     } else {
-                        report_error(node->line, "Arithmetic operations require numeric types (int or float)");
+                        report_error(node->line, "Arithmetic operations (-, *, /) require numeric types (int or float)");
                         node->data_type = TYPE_VOID;
                     }
                     break;
@@ -70,11 +81,11 @@ static DataType check_expression(AstNode *node, SymbolTable *symtab) {
                     break;
 
                 case OP_LT: case OP_GT: case OP_LE: case OP_GE:
-                    if ((t1 == TYPE_INT || t1 == TYPE_FLOAT || t1 == TYPE_CHAR) &&
-                        (t2 == TYPE_INT || t2 == TYPE_FLOAT || t2 == TYPE_CHAR)) {
+                    if ((t1 == TYPE_INT || t1 == TYPE_FLOAT || t1 == TYPE_CHAR || t1 == TYPE_STRING) &&
+                        (t2 == TYPE_INT || t2 == TYPE_FLOAT || t2 == TYPE_CHAR || t2 == TYPE_STRING)) {
                         node->data_type = TYPE_BOOL;
                     } else {
-                        report_error(node->line, "Relational comparisons require numeric or char types");
+                        report_error(node->line, "Relational comparisons require numeric, char, or string types");
                         node->data_type = TYPE_BOOL;
                     }
                     break;

@@ -23,12 +23,13 @@
 
 /* ---------- Types ---------- */
 
-/* The four primitive types supported by Lumis. */
+/* The primitive types supported by Lumis. */
 typedef enum {
     TYPE_INT,
     TYPE_FLOAT,
     TYPE_CHAR,
     TYPE_BOOL,
+    TYPE_STRING,
     TYPE_VOID    /* used internally for "no value" */
 } DataType;
 
@@ -97,6 +98,7 @@ typedef struct AstNode {
     double float_value;
     char char_value;
     int  bool_value;
+    char *string_value;
 
     /* operators */
     BinOp   binop;
@@ -145,6 +147,7 @@ AstNode *ast_new_literal_int(int line, int value);
 AstNode *ast_new_literal_float(int line, double value);
 AstNode *ast_new_literal_char(int line, char value);
 AstNode *ast_new_literal_bool(int line, int value);    /* 0 or 1 */
+AstNode *ast_new_literal_string(int line, const char *value);
 AstNode *ast_new_var_ref(int line, char *name);
 
 /* Append an argument to a call node. */

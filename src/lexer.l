@@ -33,6 +33,7 @@ ID          {LETTER}({LETTER}|{DIGIT})*
 INT_NUM     {DIGIT}+
 FLOAT_NUM   {DIGIT}+\.{DIGIT}+
 CHAR_LIT    '([^'\\\n]|\\.)'
+STRING_LIT  \"([^"\\\n]|\\.)*\"
 
 %%
 
@@ -62,6 +63,7 @@ CHAR_LIT    '([^'\\\n]|\\.)'
 "float"                 { return FLOAT; }
 "char"                  { return CHAR; }
 "bool"                  { return BOOL; }
+"string"                { return STRING; }
 "void"                  { return VOID; }
 "if"                    { return IF; }
 "else"                  { return ELSE; }
@@ -112,6 +114,28 @@ CHAR_LIT    '([^'\\\n]|\\.)'
 {CHAR_LIT}              {
                             yylval.charval = yytext[1];
                             return CHAR_LIT;
+                        }
+
+{STRING_LIT}            {
+                            int len = strlen(yytext);
+                            char *buf = (char *)malloc(len);
+                            int j = 0;
+                            for (int i = 1; i < len - 1; i++) {
+                                if (yytext[i] == '\\' && i + 1 < len - 1) {
+                                    i++;
+                                    if (yytext[i] == 'n') buf[j++] = '\n';
+                                    else if (yytext[i] == 't') buf[j++] = '\t';
+                                    else if (yytext[i] == 'r') buf[j++] = '\r';
+                                    else if (yytext[i] == '"') buf[j++] = '"';
+                                    else if (yytext[i] == '\\') buf[j++] = '\\';
+                                    else buf[j++] = yytext[i];
+                                } else {
+                                    buf[j++] = yytext[i];
+                                }
+                            }
+                            buf[j] = '\0';
+                            yylval.strval = buf;
+                            return STRING_LIT;
                         }
 
 {ID}                    {

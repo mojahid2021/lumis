@@ -50,6 +50,12 @@ static char *gen_expr(AstNode *node, FILE *out) {
 
     switch (node->kind) {
         case NODE_LITERAL: {
+            if (node->data_type == TYPE_STRING) {
+                int len = node->string_value ? strlen(node->string_value) : 0;
+                char *buf = (char *)malloc(len + 3);
+                snprintf(buf, len + 3, "\"%s\"", node->string_value ? node->string_value : "");
+                return buf;
+            }
             char buf[64];
             switch (node->data_type) {
                 case TYPE_INT:   snprintf(buf, sizeof(buf), "%d", node->int_value); break;

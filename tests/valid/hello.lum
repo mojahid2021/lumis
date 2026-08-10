@@ -1,5 +1,5 @@
 // Hello World example in Lumis
 int main() {
-    print(42);
+    print("Hello, World!");
     return 0;
 }

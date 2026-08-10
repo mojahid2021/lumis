@@ -1,0 +1,16 @@
+// String operations test in Lumis
+int main() {
+    string greeting = "Hello, ";
+    string name = "World!";
+    string message = greeting + name;
+    print(message);
+
+    string msgWithNum = "Value: " + 42;
+    print(msgWithNum);
+
+    if (greeting == "Hello, ") {
+        print("Strings match!");
+    }
+
+    return 0;
+}

@@ -19,12 +19,13 @@
 
 const char *type_name(DataType t) {
     switch (t) {
-        case TYPE_INT:   return "int";
-        case TYPE_FLOAT: return "float";
-        case TYPE_CHAR:  return "char";
-        case TYPE_BOOL:  return "bool";
-        case TYPE_VOID:  return "void";
-        default:         return "<unknown>";
+        case TYPE_INT:    return "int";
+        case TYPE_FLOAT:  return "float";
+        case TYPE_CHAR:   return "char";
+        case TYPE_BOOL:   return "bool";
+        case TYPE_STRING: return "string";
+        case TYPE_VOID:   return "void";
+        default:          return "<unknown>";
     }
 }
 
@@ -174,6 +175,13 @@ AstNode *ast_new_literal_bool(int line, int value) {
     return n;
 }
 
+AstNode *ast_new_literal_string(int line, const char *value) {
+    AstNode *n = make_node(NODE_LITERAL, line);
+    n->data_type = TYPE_STRING;
+    n->string_value = strdup(value ? value : "");
+    return n;
+}
+
 AstNode *ast_new_var_ref(int line, char *name) {
     AstNode *n = make_node(NODE_VAR_REF, line);
     n->name = strdup(name);
@@ -272,11 +280,12 @@ void ast_print(AstNode *node, FILE *out, int indent) {
             break;
         case NODE_LITERAL:
             switch (node->data_type) {
-                case TYPE_INT:   fprintf(out, "Literal(int): %d\n", node->int_value); break;
-                case TYPE_FLOAT: fprintf(out, "Literal(float): %g\n", node->float_value); break;
-                case TYPE_CHAR:  fprintf(out, "Literal(char): '%c'\n", node->char_value); break;
-                case TYPE_BOOL:  fprintf(out, "Literal(bool): %s\n", node->bool_value ? "true" : "false"); break;
-                default:         fprintf(out, "Literal\n"); break;
+                case TYPE_INT:    fprintf(out, "Literal(int): %d\n", node->int_value); break;
+                case TYPE_FLOAT:  fprintf(out, "Literal(float): %g\n", node->float_value); break;
+                case TYPE_CHAR:   fprintf(out, "Literal(char): '%c'\n", node->char_value); break;
+                case TYPE_BOOL:   fprintf(out, "Literal(bool): %s\n", node->bool_value ? "true" : "false"); break;
+                case TYPE_STRING: fprintf(out, "Literal(string): \"%s\"\n", node->string_value ? node->string_value : ""); break;
+                default:          fprintf(out, "Literal\n"); break;
             }
             break;
         case NODE_VAR_REF:
@@ -311,5 +320,6 @@ void ast_free(AstNode *node) {
     free(node->args);
     free(node->params);
     free(node->name);
+    free(node->string_value);
     free(node);
 }

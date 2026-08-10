@@ -13,12 +13,13 @@
 
 static const char *c_type_name(DataType t) {
     switch (t) {
-        case TYPE_INT:   return "int";
-        case TYPE_FLOAT: return "double";
-        case TYPE_CHAR:  return "char";
-        case TYPE_BOOL:  return "bool";
-        case TYPE_VOID:  return "void";
-        default:         return "int";
+        case TYPE_INT:    return "int";
+        case TYPE_FLOAT:  return "double";
+        case TYPE_CHAR:   return "char";
+        case TYPE_BOOL:   return "bool";
+        case TYPE_STRING: return "const char*";
+        case TYPE_VOID:   return "void";
+        default:          return "int";
     }
 }
 
@@ -54,11 +55,12 @@ static void gen_c_expr(AstNode *node, FILE *out) {
     switch (node->kind) {
         case NODE_LITERAL:
             switch (node->data_type) {
-                case TYPE_INT:   fprintf(out, "%d", node->int_value); break;
-                case TYPE_FLOAT: fprintf(out, "%g", node->float_value); break;
-                case TYPE_CHAR:  fprintf(out, "'%c'", node->char_value); break;
-                case TYPE_BOOL:  fprintf(out, "%s", node->bool_value ? "true" : "false"); break;
-                default:         fprintf(out, "0"); break;
+                case TYPE_INT:    fprintf(out, "%d", node->int_value); break;
+                case TYPE_FLOAT:  fprintf(out, "%g", node->float_value); break;
+                case TYPE_CHAR:   fprintf(out, "'%c'", node->char_value); break;
+                case TYPE_BOOL:   fprintf(out, "%s", node->bool_value ? "true" : "false"); break;
+                case TYPE_STRING: fprintf(out, "\"%s\"", node->string_value ? node->string_value : ""); break;
+                default:          fprintf(out, "0"); break;
             }
             break;
 
@@ -75,11 +77,35 @@ static void gen_c_expr(AstNode *node, FILE *out) {
             break;
 
         case NODE_BINARY_OP:
-            fputs("(", out);
-            gen_c_expr(node->children[0], out);
-            fprintf(out, " %s ", c_binop_str(node->binop));
-            gen_c_expr(node->children[1], out);
-            fputs(")", out);
+            if (node->data_type == TYPE_STRING && node->binop == OP_ADD) {
+                fputs("__lumis_concat(__lumis_to_str(", out);
+                gen_c_expr(node->children[0], out);
+                fputs("), __lumis_to_str(", out);
+                gen_c_expr(node->children[1], out);
+                fputs("))", out);
+            } else if ((node->children[0]->data_type == TYPE_STRING || node->children[1]->data_type == TYPE_STRING) &&
+                       (node->binop == OP_EQ || node->binop == OP_NEQ || node->binop == OP_LT || node->binop == OP_GT || node->binop == OP_LE || node->binop == OP_GE)) {
+                switch (node->binop) {
+                    case OP_EQ:  fputs("__lumis_streq(", out); break;
+                    case OP_NEQ: fputs("__lumis_strneq(", out); break;
+                    case OP_LT:  fputs("__lumis_strlt(", out); break;
+                    case OP_GT:  fputs("__lumis_strgt(", out); break;
+                    case OP_LE:  fputs("__lumis_strle(", out); break;
+                    case OP_GE:  fputs("__lumis_strge(", out); break;
+                    default: break;
+                }
+                fputs("__lumis_to_str(", out);
+                gen_c_expr(node->children[0], out);
+                fputs("), __lumis_to_str(", out);
+                gen_c_expr(node->children[1], out);
+                fputs("))", out);
+            } else {
+                fputs("(", out);
+                gen_c_expr(node->children[0], out);
+                fprintf(out, " %s ", c_binop_str(node->binop));
+                gen_c_expr(node->children[1], out);
+                fputs(")", out);
+            }
             break;
 
         case NODE_CALL:
@@ -117,7 +143,11 @@ static void gen_c_stmt(AstNode *node, FILE *out, int indent) {
                 gen_c_expr(node->children[0], out);
                 fputs(";\n", out);
             } else {
-                fprintf(out, "%s %s = 0;\n", c_type_name(node->data_type), node->name);
+                if (node->data_type == TYPE_STRING) {
+                    fprintf(out, "%s %s = \"\";\n", c_type_name(node->data_type), node->name);
+                } else {
+                    fprintf(out, "%s %s = 0;\n", c_type_name(node->data_type), node->name);
+                }
             }
             break;
 
@@ -211,12 +241,42 @@ void c_backend_generate(AstNode *root, FILE *out) {
     if (!root) return;
 
     fputs("#include <stdio.h>\n", out);
-    fputs("#include <stdbool.h>\n\n", out);
+    fputs("#include <stdbool.h>\n", out);
+    fputs("#include <stdlib.h>\n", out);
+    fputs("#include <string.h>\n\n", out);
 
     fputs("static void __lumis_print_int(int x) { printf(\"%d\\n\", x); }\n", out);
     fputs("static void __lumis_print_float(double x) { printf(\"%g\\n\", x); }\n", out);
     fputs("static void __lumis_print_char(char x) { printf(\"%c\\n\", x); }\n", out);
-    fputs("static void __lumis_print_bool(bool x) { printf(\"%s\\n\", x ? \"true\" : \"false\"); }\n\n", out);
+    fputs("static void __lumis_print_bool(bool x) { printf(\"%s\\n\", x ? \"true\" : \"false\"); }\n", out);
+    fputs("static void __lumis_print_string(const char *x) { printf(\"%s\\n\", x); }\n\n", out);
+
+    fputs("static const char *__lumis_to_string_int(int x) { char *b = (char*)malloc(32); snprintf(b, 32, \"%d\", x); return b; }\n", out);
+    fputs("static const char *__lumis_to_string_float(double x) { char *b = (char*)malloc(32); snprintf(b, 32, \"%g\", x); return b; }\n", out);
+    fputs("static const char *__lumis_to_string_char(char x) { char *b = (char*)malloc(2); b[0]=x; b[1]='\\0'; return b; }\n", out);
+    fputs("static const char *__lumis_to_string_bool(bool x) { return x ? \"true\" : \"false\"; }\n", out);
+    fputs("static const char *__lumis_to_string_str(const char *x) { return x; }\n\n", out);
+
+    fputs("#define __lumis_to_str(x) _Generic((x), \\\n", out);
+    fputs("    bool: __lumis_to_string_bool, \\\n", out);
+    fputs("    int: __lumis_to_string_int, \\\n", out);
+    fputs("    double: __lumis_to_string_float, \\\n", out);
+    fputs("    float: __lumis_to_string_float, \\\n", out);
+    fputs("    char: __lumis_to_string_char, \\\n", out);
+    fputs("    char*: __lumis_to_string_str, \\\n", out);
+    fputs("    const char*: __lumis_to_string_str, \\\n", out);
+    fputs("    default: __lumis_to_string_int)(x)\n\n", out);
+
+    fputs("static const char *__lumis_concat(const char *s1, const char *s2) {\n", out);
+    fputs("    char *res = (char*)malloc(strlen(s1) + strlen(s2) + 1);\n", out);
+    fputs("    strcpy(res, s1); strcat(res, s2); return res;\n", out);
+    fputs("}\n", out);
+    fputs("static bool __lumis_streq(const char *s1, const char *s2) { return strcmp(s1, s2) == 0; }\n", out);
+    fputs("static bool __lumis_strneq(const char *s1, const char *s2) { return strcmp(s1, s2) != 0; }\n", out);
+    fputs("static bool __lumis_strlt(const char *s1, const char *s2) { return strcmp(s1, s2) < 0; }\n", out);
+    fputs("static bool __lumis_strgt(const char *s1, const char *s2) { return strcmp(s1, s2) > 0; }\n", out);
+    fputs("static bool __lumis_strle(const char *s1, const char *s2) { return strcmp(s1, s2) <= 0; }\n", out);
+    fputs("static bool __lumis_strge(const char *s1, const char *s2) { return strcmp(s1, s2) >= 0; }\n\n", out);
 
     fputs("#define __lumis_print(x) _Generic((x), \\\n", out);
     fputs("    bool: __lumis_print_bool, \\\n", out);
@@ -224,6 +284,8 @@ void c_backend_generate(AstNode *root, FILE *out) {
     fputs("    double: __lumis_print_float, \\\n", out);
     fputs("    float: __lumis_print_float, \\\n", out);
     fputs("    char: __lumis_print_char, \\\n", out);
+    fputs("    char*: __lumis_print_string, \\\n", out);
+    fputs("    const char*: __lumis_print_string, \\\n", out);
     fputs("    default: __lumis_print_int)(x)\n\n", out);
 
     /* Function forward declarations */

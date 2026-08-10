@@ -32,12 +32,12 @@ int syntax_errors = 0;
 }
 
 /* Tokens */
-%token INT FLOAT CHAR BOOL VOID
+%token INT FLOAT CHAR BOOL STRING VOID
 %token IF ELSE WHILE FOR RETURN PRINT
 %token <intval> TRUE_LIT FALSE_LIT INT_NUM
 %token <floatval> FLOAT_NUM
 %token <charval> CHAR_LIT
-%token <strval> ID
+%token <strval> ID STRING_LIT
 
 %token PLUS MINUS STAR SLASH PERCENT
 %token EQ NEQ LT GT LE GE
@@ -125,6 +125,7 @@ type:
     | FLOAT { $$ = TYPE_FLOAT; }
     | CHAR  { $$ = TYPE_CHAR; }
     | BOOL  { $$ = TYPE_BOOL; }
+    | STRING { $$ = TYPE_STRING; }
     | VOID  { $$ = TYPE_VOID; }
     ;
 
@@ -246,6 +247,7 @@ expr:
     | INT_NUM             { $$ = ast_new_literal_int(yylineno, $1); }
     | FLOAT_NUM           { $$ = ast_new_literal_float(yylineno, $1); }
     | CHAR_LIT            { $$ = ast_new_literal_char(yylineno, $1); }
+    | STRING_LIT          { $$ = ast_new_literal_string(yylineno, $1); free($1); }
     | TRUE_LIT            { $$ = ast_new_literal_bool(yylineno, 1); }
     | FALSE_LIT           { $$ = ast_new_literal_bool(yylineno, 0); }
     | ID LPAREN arg_list RPAREN {
