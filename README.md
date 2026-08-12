@@ -26,10 +26,8 @@ It is implemented in **C** using **Flex** (lexer) and **Bison** (parser). The co
 - **Functions:** definitions, parameters, function calls, `void` and typed return values
 - **Comments:** single-line (`//`) and block (`/* ... */`)
 - **Error reporting:** descriptive line-numbered lexical, syntax, and semantic error diagnostics
-- **Multiple Back-End Modes:**
-  1. **Three-Address Code (TAC):** Machine-independent intermediate code generator
-  2. **In-Memory AST Interpreter (`-r`):** Direct statement execution engine
-  3. **Native Binary Compiler (`-o`):** C code generator & GCC compiler driver
+- **Execution Engine:**
+  - **In-Memory AST Interpreter (`-r` or default):** Direct statement evaluation & program execution engine
 
 ---
 
@@ -99,32 +97,16 @@ make clean
 
 ---
 
-## 4. Usage & Diagnostic Modes
+## 4. Usage & Execution
 
-Lumis supports multi-mode execution flags for inspecting compiler passes and running programs:
+Lumis compiles and executes `.lum` programs directly in memory via its interpreter:
 
 ```bash
-# 1. Default Diagnostic Pipeline (AST, Symbol Table, TAC)
+# Execute a program in-memory
 ./lumis tests/valid/hello.lum
 
-# 2. Dump Lexical Scanned Tokens (-t, --tokens)
-./lumis -t tests/valid/hello.lum
-
-# 3. Pretty-print Abstract Syntax Tree (-p, --ast)
-./lumis -p tests/valid/hello.lum
-
-# 4. Semantic Checks & Symbol Table Dump (-s, --symtab)
-./lumis -s tests/valid/hello.lum
-
-# 5. Output Intermediate Three-Address Code (-c, --tac)
-./lumis -c tests/valid/hello.lum
-
-# 6. Execute Program In-Memory (-r, --run)
+# Or explicitly specify the run flag:
 ./lumis -r tests/valid/hello.lum
-
-# 7. Compile Program to Standalone Native Binary via GCC (-o)
-./lumis -o hello tests/valid/hello.lum
-./hello
 ```
 
 If an error occurs at any phase, the compiler stops and reports it with line-numbered diagnostics.
@@ -289,15 +271,13 @@ lumis/
 │       ├── 06_HOW_TO_RUN_AND_EXTEND.md     # How to run, test & add features
 │       └── 07_COMPILER_DESIGN_VIVA_PREP.md # 25+ Exam defense & viva Q&As
 ├── src/
-│   ├── main.c                # Driver entry point & CLI options
+│   ├── main.c                # Driver entry point & CLI orchestrator
 │   ├── lexer.l               # Flex — scanner (DFAs & Regex)
 │   ├── parser.y              # Bison — LALR(1) parser & AST builder
 │   ├── ast.h / ast.c         # Abstract Syntax Tree structures
 │   ├── symtab.h / symtab.c   # Symbol table & scope management
 │   ├── semantic.h / semantic.c  # Semantic analyzer & type checker
-│   ├── codegen.h / codegen.c    # Three-address code generator (TAC)
-│   ├── interp.h / interp.c       # AST Interpreter / Execution Engine (-r)
-│   └── c_backend.h / c_backend.c # C Backend & GCC Binary Compiler (-o)
+│   └── interp.h / interp.c       # AST Interpreter / Execution Engine (-r)
 └── tests/
     ├── valid/                # Valid sample programs (.lum)
     │   ├── variables.lum     # Comprehensive syntax reference
@@ -336,18 +316,9 @@ Walks the AST and enforces the rules that grammars can't express:
 - Type checking on assignments and expressions
 - Function signatures match on calls and definitions
 
-### Phase 4 — Code Generation (`codegen.c`)
+### Phase 4 — Execution Engine (`interp.c`)
 
-Walks the validated AST and emits **three-address code** — a simple, low-level intermediate representation where each instruction has at most three operands. Example:
-
-```text
-t1 = a + b
-if t1 goto L1
-goto L2
-LABEL L1
-PRINT t1
-LABEL L2
-```
+Walks the validated AST and evaluates statements in-memory using an environment scope stack to execute Lumis programs.
 
 ---
 

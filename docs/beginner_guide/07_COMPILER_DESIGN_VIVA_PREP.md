@@ -7,22 +7,16 @@ This guide is specifically written to help you **defend your project** in a **Co
 ## Part 1: High-Level Architecture Questions
 
 ### Q1: What is Lumis and what toolchain is used to build it?
-> **Answer**: Lumis is a 4-phase compiler for a C-like programming language. It is implemented in C using:
+> **Answer**: Lumis is a compiler and execution engine for a C-like programming language. It is implemented in C using:
 > - **Flex** for lexical analysis (scanning tokens using regular expressions and DFAs).
 > - **Bison** for syntax analysis (LALR(1) bottom-up parser building an AST).
-> - **Custom C modules** for symbol table management (`symtab.c`), type checking (`semantic.c`), TAC code generation (`codegen.c`), in-memory interpretation (`interp.c`), and native binary compilation (`c_backend.c`).
+> - **Custom C modules** for symbol table management (`symtab.c`), static semantic type checking (`semantic.c`), and in-memory execution (`interp.c`).
 > - **GCC and Make** for build automation.
 
-### Q2: What is the difference between a Compiler and an Interpreter? Does Lumis do both?
-> **Answer**: A **compiler** translates source code into machine or intermediate code before execution. An **interpreter** executes instructions directly in-memory. 
-> **Lumis does both**:
-> - Token dump mode (`./lumis -t file.lum`): Dumps Flex scanned tokens.
-> - AST visualizer mode (`./lumis -p file.lum`): Pretty-prints the Abstract Syntax Tree.
-> - Symbol Table mode (`./lumis -s file.lum`): Enforces semantics and prints Symbol Table.
-> - Intermediate TAC mode (`./lumis -c file.lum`): Outputs Three-Address Code.
-> - Default pipeline (`./lumis file.lum`): Runs full 4-phase diagnostic compilation suite.
-> - In-memory execution mode (`./lumis -r file.lum`): Direct AST tree-walking interpreter.
-> - Native binary compilation mode (`./lumis -o bin file.lum`): Transpiles to C and compiles via GCC.
+### Q2: What is the difference between a Compiler and an Interpreter? How does Lumis work?
+> **Answer**: A **compiler** analyzes source code into tokens, AST, and semantic environments; an **interpreter** executes instructions in-memory.
+> **Lumis combines both**:
+> - Lumis parses `.lum` source files into an Abstract Syntax Tree (AST), performs static semantic analysis and scope checking using a Symbol Table stack, and then directly evaluates the AST in-memory via its tree-walking interpreter (`./lumis file.lum` or `./lumis -r file.lum`).
 
 > **For complete file-by-file explanations for every module, refer to [`docs/STEP_BY_STEP_FILE_GUIDE.md`](../STEP_BY_STEP_FILE_GUIDE.md).**
 
@@ -85,39 +79,18 @@ This guide is specifically written to help you **defend your project** in a **Co
 
 ---
 
-## Part 5: Code Generation, Execution & C Backend
+## Part 5: Execution Engine & In-Memory Interpreter
 
-### Q10: What is Three-Address Code (TAC)? Why is it called "Three-Address"?
-> **Answer**: Three-Address Code (TAC) is an Intermediate Representation (IR) where each instruction has at most one operator and at most three address references (two operands and one result). Example: `t1 = a + b`.
-
-### Q11: How are temporary variables and labels generated in `src/codegen.c`?
-> **Answer**: Lumis uses helper functions `new_temp()` and `new_label()` that generate sequential identifiers using static counters: `t1`, `t2`, `t3`... and `L1`, `L2`, `L3`...
-
-### Q12: How does Lumis translate an `if-else` statement to TAC?
-> **Answer**:
-> ```text
->     t1 = cond
->     IF_FALSE t1 GOTO L_else
->     <then_branch_instructions>
->     GOTO L_end
-> LABEL L_else:
->     <else_branch_instructions>
-> LABEL L_end:
-> ```
-
-### Q13: How does Lumis execute code directly in `-r` mode?
+### Q10: How does Lumis execute code in `-r` mode (or default)?
 > **Answer**: The in-memory interpreter (`src/interp.c`) performs a tree-walk traversal over the AST, maintaining an environment stack of variable values and evaluating expressions recursively.
-
-### Q14: How does Lumis compile code to a native executable binary in `-o` mode?
-> **Answer**: The C backend (`src/c_backend.c`) translates the validated Lumis AST nodes into standard C code (mapping `print` to C11 `_Generic` printf wrappers), writes it to a temporary source file, and invokes `gcc` to produce a standalone executable binary.
 
 ---
 
 ## Part 6: Quick Revision Checklist for Exams
 
-- [x] Can explain the 4 compiler phases in order.
+- [x] Can explain the compiler phases in order.
 - [x] Know where token regex rules live (`src/lexer.l`).
 - [x] Know where grammar BNF rules live (`src/parser.y`).
 - [x] Can explain how `AstNode` represents expressions and statements (`src/ast.h`).
 - [x] Can explain how symbol scopes are linked (`src/symtab.c`).
-- [x] Can demonstrate running Lumis in TAC, interpreter, and binary modes.
+- [x] Can demonstrate running Lumis on sample programs (`./lumis <file.lum>`).

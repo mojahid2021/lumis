@@ -22,15 +22,13 @@ lumis/
 │       ├── 06_HOW_TO_RUN_AND_EXTEND.md
 │       └── 07_COMPILER_DESIGN_VIVA_PREP.md  # Viva & Exam defense guide
 ├── src/                          # Compiler Source Code (C, Flex, Bison)
-│   ├── main.c                    # Driver entry point & CLI options (-t, -p, -s, -c, -r, -o)
+│   ├── main.c                    # Driver entry point & CLI orchestrator
 │   ├── lexer.l                   # Flex scanner specification
 │   ├── parser.y                  # Bison parser specification
 │   ├── ast.h / ast.c             # Abstract Syntax Tree representation
 │   ├── symtab.h / symtab.c       # Symbol Table & scope management
 │   ├── semantic.h / semantic.c   # Type checking & semantic analyzer
-│   ├── codegen.h / codegen.c     # TAC code generator
-│   ├── interp.h / interp.c       # AST Interpreter / Execution Engine (-r)
-│   └── c_backend.h / c_backend.c # C Backend & GCC Binary Compiler (-o)
+│   └── interp.h / interp.c       # AST Interpreter / Execution Engine (-r)
 └── tests/                        # Test suite
     ├── valid/                    # Valid programs (.lum)
     │   ├── variables.lum         # Complete reference for variables & syntax
@@ -58,12 +56,8 @@ lumis/
 | `src/symtab.c` | C Source | Implements scoped symbol insertion, lookup, and scope push/pop | `symtab_insert()`, `symtab_lookup()` |
 | `src/semantic.h` | C Header | Interface for semantic analysis | `semantic_check()` |
 | `src/semantic.c` | C Source | Walks AST to verify types, declarations, and function signatures | `semantic_check()`, `check_expression()` |
-| `src/codegen.h` | C Header | Interface for Three-Address Code generation | `codegen_generate()` |
-| `src/codegen.c` | C Source | Walks AST to emit intermediate instructions (TAC) | `codegen_generate()`, `gen_expr()`, `gen_stmt()` |
 | `src/interp.h` | C Header | Interface for direct in-memory AST execution | `interp_execute()` |
 | `src/interp.c` | C Source | Executes Lumis AST instructions in-memory (`-r` / `--run`) | `interp_execute()`, `eval_expr()`, `exec_stmt()` |
-| `src/c_backend.h` | C Header | Interface for C code generation & GCC invocation | `c_backend_compile_binary()` |
-| `src/c_backend.c` | C Source | Translates AST to C and compiles to native binary (`-o`) | `c_backend_generate()`, `c_backend_compile_binary()` |
 | `Makefile` | Build Script | Runs `bison`, `flex`, and `gcc` to produce `lumis` binary | `make`, `make clean`, `make test` |
 
 ---
@@ -80,8 +74,8 @@ lumis/
                                                   semantic.c ◄──► symtab.c
                                                         │
                                                         ▼
-                                                    codegen.c
+                                                     interp.c
                                                         │
                                                         ▼
-                                                  [ TAC Output ]
+                                                [ Execution Output ]
 ```

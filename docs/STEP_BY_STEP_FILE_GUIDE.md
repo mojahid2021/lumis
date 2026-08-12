@@ -24,13 +24,11 @@ lumis/
 │       ├── 06_HOW_TO_RUN_AND_EXTEND.md        # CLI options, syntax guide & extensions
 │       └── 07_COMPILER_DESIGN_VIVA_PREP.md    # 25 Viva defense Q&As for course exam
 ├── src/                              # Compiler Source Files
-│   ├── main.c                        # CLI Driver & multi-phase pipeline orchestrator
+│   ├── main.c                        # CLI Driver & pipeline orchestrator
 │   ├── ast.h / ast.c                 # Abstract Syntax Tree (AST) node definitions & printer
 │   ├── symtab.h / symtab.c           # Parent-linked Scope Stack Symbol Table manager
 │   ├── semantic.h / semantic.c       # Two-pass static semantic analyzer & type checker
-│   ├── codegen.h / codegen.c         # Three-Address Code (TAC) intermediate generator
 │   ├── interp.h / interp.c           # Tree-walking in-memory AST interpreter (-r)
-│   ├── c_backend.h / c_backend.c     # Target C transpiler & native GCC binary driver (-o)
 │   ├── lexer.l                       # Flex scanner specification (Regex -> Tokens)
 │   └── parser.y                      # Bison LALR(1) parser specification (Tokens -> AST)
 └── tests/                            # Test suite
@@ -55,15 +53,10 @@ lumis/
 ---
 
 ### `src/main.c` — CLI Driver & Pipeline Orchestrator
-- **Role**: Parses command-line arguments, opens the input Lumis source file, sets `yyin`, and routes execution to the chosen compiler diagnostic mode.
+- **Role**: Parses command-line arguments, opens the input Lumis source file, sets `yyin`, runs syntax and semantic validation, and executes the AST via the interpreter.
 - **Supported CLI Flags**:
-  - `-t`, `--tokens`: Runs `yylx()` in a loop to dump all matched tokens with line numbers and string values.
-  - `-p`, `--ast`: Runs `yyparse()` and prints the resulting Abstract Syntax Tree hierarchy.
-  - `-s`, `--symtab`: Runs parser and semantic checker, then prints the Symbol Table contents.
-  - `-c`, `--tac`: Runs parser, semantic checker, and outputs Three-Address Code (TAC).
-  - `-r`, `--run`: Executes the program immediately in-memory using `interp_execute()`.
-  - `-o <binary>`: Transpiles the AST to C and invokes GCC to build a native binary using `c_backend_compile_binary()`.
-  - Default (no flags): Executes the complete 4-phase diagnostic pipeline.
+  - `-r`, `--run`: Executes the program in-memory using `interp_execute()`.
+  - Default (no flags): Executes the program using the in-memory interpreter.
 
 ---
 
@@ -122,23 +115,8 @@ lumis/
 
 ---
 
-### `src/codegen.h` & `src/codegen.c` — Three-Address Code (TAC) Generator
-- **Role**: Emits linear machine-independent Three-Address Code (TAC) quadruples/triples by flattening AST tree structures.
-- **Key Register & Label Routines**:
-  - `new_temp()`: Generates sequential virtual registers (`t1`, `t2`, `t3`, ...).
-  - `new_label()`: Generates sequential control flow jump labels (`L1`, `L2`, `L3`, ...).
-- **Modular Helpers**:
-  - Expression Linearization: `gen_tac_literal()`, `gen_tac_binary_op()`, `gen_tac_unary_op()`, `gen_tac_call()`, `gen_expr_tac()`.
-  - Statement Linearization: `gen_tac_if()`, `gen_tac_while()`, `gen_tac_for()`, `gen_tac_func_decl()`, `gen_stmt_tac()`.
-- **Control Flow Linearization Rules**:
-  - `if (cond) stmt1 else stmt2` $\rightarrow$ `IF_FALSE cond GOTO L_else`, `stmt1`, `GOTO L_end`, `LABEL L_else:`, `stmt2`, `LABEL L_end:`.
-  - `while (cond) stmt` $\rightarrow$ `LABEL L_start:`, `IF_FALSE cond GOTO L_end`, `stmt`, `GOTO L_start`, `LABEL L_end:`.
-  - `for (init; cond; update) stmt` $\rightarrow$ `init`, `LABEL L_start:`, `IF_FALSE cond GOTO L_end`, `stmt`, `update`, `GOTO L_start`, `LABEL L_end:`.
-
----
-
 ### `src/interp.h` & `src/interp.c` — Tree-Walking Interpreter Backend
-- **Role**: Evaluates the AST directly in memory for zero-latency execution when invoked with `-r` / `--run`.
+- **Role**: Evaluates the AST directly in memory for zero-latency execution when invoked with `-r` / `--run` (or default).
 - **Runtime Environment Structures**:
   - `Value`: Tagged union holding runtime values (`int_val`, `float_val`, `char_val`, `bool_val`, `str_val`).
   - `VarSymbol`: Linked list node binding variable names to runtime `Value` instances.
@@ -148,22 +126,6 @@ lumis/
   - Expression Evaluators: `eval_literal()`, `eval_unary_op()`, `eval_binary_op()`, `eval_call_func()`, `eval_expr()`.
   - Statement Executors: `exec_block()`, `exec_var_decl()`, `exec_assign()`, `exec_if_stmt()`, `exec_while_stmt()`, `exec_for_stmt()`, `exec_return_stmt()`, `exec_print_stmt()`, `exec_stmt()`.
 - **Public Entry Point**: `interp_execute(root)` locates `main()`, initializes `global_env`, executes `main()` statement block, and returns exit code.
-
----
-
-### `src/c_backend.h` & `src/c_backend.c` — Target C Transpiler & GCC Driver
-- **Role**: Transpiles Lumis AST nodes into valid standard C source code and invokes GCC to compile native binary executables when invoked with `-o <binary>`.
-- **Polymorphic Printing & String Conversion**:
-  - Uses C11 `_Generic` selection macros (`__lumis_print`, `__lumis_to_str`) for type-safe polymorphic printing and string conversion of `int`, `float`, `char`, `bool`, and `string`.
-  - Emits helper functions for string concatenation (`__lumis_concat`) and string relational comparisons (`__lumis_streq`, `__lumis_strneq`, `__lumis_strlt`, `__lumis_strgt`, `__lumis_strle`, `__lumis_strge`).
-- **Modular Helpers**:
-  - Expression Transpilers: `gen_c_literal()`, `gen_c_binary_op()`, `gen_c_call()`, `gen_c_expr()`.
-  - Statement Transpilers: `gen_c_if()`, `gen_c_while()`, `gen_c_for()`, `gen_c_func_decl()`, `gen_c_stmt()`.
-- **Compilation Driver (`c_backend_compile_binary`)**:
-  - Generates a process-unique temporary C file in `/tmp/lumis_tmp_<pid>_<rand>.c`.
-  - Writes transpiled C code using `c_backend_generate()`.
-  - Invokes `gcc -O2 /tmp/lumis_tmp_... -o <output_binary>` via `system()`.
-  - Cleans up the temporary source file.
 
 ---
 
@@ -231,19 +193,19 @@ lumis/
                |  Semantic Analyzer (semantic.c)  | <---> Symbol Table (symtab.c)
                +----------------------------------+
                                 |
-             +------------------+------------------+
-             |                     |               |
-             v                     v               v
-   Interpreter (-r)        TAC Generator (-c)    C Transpiler (-o)
-   (src/interp.c)          (src/codegen.c)       (src/c_backend.c)
-             |                     |               |
-             v                     v               v
-  Immediate Execution       Linear TAC Output    Native Binary (GCC)
+                                v
+               +----------------------------------+
+               |  Interpreter Backend             |
+               |  (src/interp.c)                  |
+               +----------------------------------+
+                                |
+                                v
+                       Immediate Execution
 ```
 
 ---
 
-## 4. Execution Examples & Output Modes
+## 4. Execution Examples
 
 ### Program Source (`tests/valid/hello.lum`)
 ```c
@@ -253,65 +215,16 @@ int main() {
 }
 ```
 
-### 1. Lexical Diagnostic Mode (`./lumis -t tests/valid/hello.lum`)
-```text
-=== LEXICAL TOKENS DIAGNOSTIC MODE (-t) ===
-Line   2 | Token ID: 258  | Text: 'int'
-Line   2 | Token ID: 275  | Text: 'main'
-Line   2 | Token ID: 294  | Text: '('
-Line   2 | Token ID: 295  | Text: ')'
-Line   2 | Token ID: 296  | Text: '{'
-Line   3 | Token ID: 269  | Text: 'print'
-Line   3 | Token ID: 294  | Text: '('
-Line   3 | Token ID: 276  | Text: '"Hello, World!"'
-Line   3 | Token ID: 295  | Text: ')'
-Line   3 | Token ID: 292  | Text: ';'
-Line   4 | Token ID: 268  | Text: 'return'
-Line   4 | Token ID: 272  | Text: '0'
-Line   4 | Token ID: 292  | Text: ';'
-Line   5 | Token ID: 297  | Text: '}'
-✓ Lexical scanning completed successfully.
-```
-
-### 2. AST Visualizer Mode (`./lumis -p tests/valid/hello.lum`)
-```text
-=== ABSTRACT SYNTAX TREE (AST) ===
-Program
-  FunctionDecl: main -> int
-    Block
-      PrintStmt
-        Literal(string): "Hello, World!"
-      ReturnStmt
-        Literal(int): 0
-```
-
-### 3. Symbol Table Mode (`./lumis -s tests/valid/hello.lum`)
-```text
-=== SYMBOL TABLE ===
-Scope: global
-    func main : int   (line 2)
-```
-
-### 4. Three-Address Code Mode (`./lumis -c tests/valid/hello.lum`)
-```text
-=== THREE-ADDRESS CODE (TAC) ===
-
-FUNC main:
-    PRINT "Hello, World!"
-    RETURN 0
-    END FUNC
-```
-
-### 5. Interpreter Execution Mode (`./lumis -r tests/valid/hello.lum`)
+### Running the Program (`./lumis tests/valid/hello.lum` or `./lumis -r tests/valid/hello.lum`)
 ```text
 === PROGRAM EXECUTION ===
 Hello, World!
 =========================
 Program finished with exit code 0
 ```
-
-### 6. Native Binary Compilation (`./lumis -o hello_bin tests/valid/hello.lum && ./hello_bin`)
-```text
-✓ Built executable binary 'hello_bin' successfully.
-Hello, World!
+Line   4 | Token ID: 268  | Text: 'return'
+Line   4 | Token ID: 272  | Text: '0'
+Line   4 | Token ID: 292  | Text: ';'
+Line   5 | Token ID: 297  | Text: '}'
+✓ Lexical scanning completed successfully.
 ```

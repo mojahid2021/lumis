@@ -30,15 +30,13 @@ A modern compiler pipeline is divided into two main parts:
 
 ## 2. Theoretical Foundations (Compiler Design Course Mapping)
 
-| Compiler Phase | Formal CS Concept | Tool / Source File in Lumis | Diagnostic CLI Flag |
-| -------------- | ----------------- | --------------------------- | ------------------- |
-| **Lexical Analysis** | Regular Expressions, Nondeterministic/Deterministic Finite Automata (DFA) | Flex (`src/lexer.l`) | `-t`, `--tokens` |
-| **Syntax Analysis** | Context-Free Grammars (CFG), Backus-Naur Form (BNF), LALR(1) Parsing | Bison (`src/parser.y`) | `-p`, `--ast` |
-| **AST Construction** | Syntax-Directed Translation (SDT), Abstract Syntax Trees | `src/ast.h`, `src/ast.c` | `-p`, `--ast` |
-| **Semantic Analysis** | Symbol Tables, Scope Chains, Type Systems & Promotion | `src/symtab.c`, `src/semantic.c` | `-s`, `--symtab` |
-| **Code Generation** | Three-Address Code (TAC), Linear Quadruples/Triples | `src/codegen.c` | `-c`, `--tac` |
-| **Interpretation** | Tree-Walking Interpreter, Scope Environments | `src/interp.c` | `-r`, `--run` |
-| **Target Compilation** | Target Code Generation, C Backend, Linker Driver | `src/c_backend.c` | `-o <binary>` |
+| Compiler Phase | Formal CS Concept | Tool / Source File in Lumis | CLI Execution Flag |
+| -------------- | ----------------- | --------------------------- | ------------------ |
+| **Lexical Analysis** | Regular Expressions, Nondeterministic/Deterministic Finite Automata (DFA) | Flex (`src/lexer.l`) | `-r`, `--run` (or default) |
+| **Syntax Analysis** | Context-Free Grammars (CFG), Backus-Naur Form (BNF), LALR(1) Parsing | Bison (`src/parser.y`) | `-r`, `--run` (or default) |
+| **AST Construction** | Syntax-Directed Translation (SDT), Abstract Syntax Trees | `src/ast.h`, `src/ast.c` | `-r`, `--run` (or default) |
+| **Semantic Analysis** | Symbol Tables, Scope Chains, Type Systems & Promotion | `src/symtab.c`, `src/semantic.c` | `-r`, `--run` (or default) |
+| **Interpretation** | Tree-Walking Interpreter, Scope Environments | `src/interp.c` | `-r`, `--run` (or default) |
 
 ---
 
@@ -56,7 +54,7 @@ int main() {
 }
 ```
 
-### Phase 1: Lexical Analysis (Flex Scanner — `src/lexer.l`) — Diagnostic Flag `-t`
+### Phase 1: Lexical Analysis (Flex Scanner — `src/lexer.l`)
 The lexer reads the character stream and converts it into a token stream:
 - `int` $\rightarrow$ `INT`
 - `main` $\rightarrow$ `ID("main")`
@@ -66,7 +64,7 @@ The lexer reads the character stream and converts it into a token stream:
 - `print(sum);` $\rightarrow$ `PRINT`, `LPAREN`, `ID("sum")`, `RPAREN`, `SEMI`
 - `return 0;` $\rightarrow$ `RETURN`, `INT_NUM(0)`, `SEMI`
 
-### Phase 2: Syntax Analysis (Bison Parser — `src/parser.y`) — Diagnostic Flag `-p`
+### Phase 2: Syntax Analysis (Bison Parser — `src/parser.y`)
 The parser matches the token sequence against Lumis BNF grammar rules using an LALR(1) parsing table and constructs the **AST**:
 
 ```text
@@ -82,7 +80,7 @@ Program
         Literal(int): 0
 ```
 
-### Phase 3: Semantic Analysis & Symbol Table (`src/semantic.c` & `src/symtab.c`) — Diagnostic Flag `-s`
+### Phase 3: Semantic Analysis & Symbol Table (`src/semantic.c` & `src/symtab.c`)
 1. Creates `global` scope and registers function `main : int`.
 2. Creates function scope `main` and registers symbols:
    - `x : SYM_VARIABLE, TYPE_INT`
@@ -92,33 +90,12 @@ Program
 4. Verifies that `x + y` produces `TYPE_INT`, matching `sum`'s declared type.
 5. Verifies `return 0;` matches function return type `int`.
 
-### Phase 4: Back-End Modes
-
-#### Mode 1: Three-Address Code Output (`./lumis -c hello.lum`)
-```text
-FUNC main:
-    x = 10
-    y = 20
-    t1 = x + y
-    sum = t1
-    PRINT sum
-    RETURN 0
-    END FUNC
-```
-
-#### Mode 2: In-Memory Interpreter Execution (`./lumis -r hello.lum`)
+### Phase 4: Program Execution via In-Memory Interpreter (`./lumis hello.lum` or `./lumis -r hello.lum`)
 ```text
 === PROGRAM EXECUTION ===
 30
 =========================
 Program finished with exit code 0
-```
-
-#### Mode 3: Native Binary Generation (`./lumis -o hello hello.lum`)
-Translates AST to C code, invokes `gcc`, and builds standalone executable `./hello`:
-```bash
-$ ./hello
-30
 ```
 
 > **For a detailed file-by-file technical breakdown, see [`docs/STEP_BY_STEP_FILE_GUIDE.md`](../STEP_BY_STEP_FILE_GUIDE.md).**

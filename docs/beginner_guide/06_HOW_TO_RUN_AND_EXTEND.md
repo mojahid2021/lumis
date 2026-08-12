@@ -52,32 +52,16 @@ make clean
 make test
 ```
 
-### Running and Compiling Code
+### Running Code
 
-Lumis supports flexible CLI flags to inspect each compilation phase individually or execute code:
+Lumis executes programs directly using its in-memory interpreter:
 
 ```bash
-# 1. View full diagnostic pipeline (AST, Symbol Table, TAC)
+# Execute program directly using the in-memory interpreter
 ./lumis tests/valid/hello.lum
 
-# 2. Dump scanned lexical tokens (-t, --tokens)
-./lumis -t tests/valid/hello.lum
-
-# 3. Pretty-print Abstract Syntax Tree (-p, --ast)
-./lumis -p tests/valid/hello.lum
-
-# 4. Perform semantic checks & view Symbol Table (-s, --symtab)
-./lumis -s tests/valid/hello.lum
-
-# 5. Output Intermediate Three-Address Code (-c, --tac)
-./lumis -c tests/valid/hello.lum
-
-# 6. Execute program directly using the in-memory interpreter (-r, --run)
+# Or explicitly pass the run flag:
 ./lumis -r tests/valid/hello.lum
-
-# 7. Compile program to a standalone native executable using GCC (-o)
-./lumis -o hello tests/valid/hello.lum
-./hello
 ```
 
 ---
@@ -214,5 +198,5 @@ Create a file `test_inc.lum` with `x++;` and run `./lumis test_inc.lum`!
 Try completing these exercises to deepen your compiler design skills:
 
 1. **Add String Literals**: Update `lexer.l` and `parser.y` to support string literals like `"Hello World"`.
-2. **Add a `do-while` loop**: Update `parser.y`, `semantic.c`, and `codegen.c` to support `do { ... } while (cond);`.
+2. **Add a `do-while` loop**: Update `parser.y`, `semantic.c`, and `interp.c` to support `do { ... } while (cond);`.
 3. **Add Constant Folding**: In `semantic.c` or `ast.c`, if an expression is `10 + 20`, simplify the AST node directly to `Literal(30)`.

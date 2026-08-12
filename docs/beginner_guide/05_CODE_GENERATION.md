@@ -78,23 +78,17 @@ LABEL L2:
 
 ---
 
-## 4. Implementation Details (`src/codegen.c`)
+## 4. Intermediate Code Representation Concepts
 
-- `new_temp()`: Generates unique temporary variable names (`t1`, `t2`, `t3`, ...).
-- `new_label()`: Generates unique jump labels (`L1`, `L2`, `L3`, ...).
-- `gen_expr(AstNode *node, FILE *out)`: Emits TAC for expressions and returns the temporary variable or constant holding the result.
-- `gen_stmt(AstNode *node, FILE *out)`: Recursively walks statement nodes in the AST and outputs structured TAC instructions.
+- **Temporary Variables**: TAC uses virtual registers (`t1`, `t2`, `t3`, ...) to hold subexpression values.
+- **Control Flow Labels**: TAC uses jump labels (`L1`, `L2`, `L3`, ...) for branch destinations.
 
 ---
 
-## 5. Execution Engine & C Binary Backend
+## 5. Execution Engine
 
-In addition to emitting machine-independent TAC, Lumis provides two back-end execution modes:
+Lumis executes programs via its in-memory interpreter:
 
 ### In-Memory AST Interpreter (`src/interp.c`)
-- **Invoked with**: `./lumis -r <file.lum>`
+- **Invoked with**: `./lumis <file.lum>` or `./lumis -r <file.lum>`
 - **Mechanism**: Walks the validated AST in-memory using recursive tree traversal, maintaining a dynamic scope stack of variable values, and executes statements (loops, conditionals, functions, `print`) immediately.
-
-### C Backend & GCC Binary Compiler (`src/c_backend.c`)
-- **Invoked with**: `./lumis -o <output_binary> <file.lum>`
-- **Mechanism**: Translates Lumis AST nodes into standard C code, maps `print(...)` to C11 `_Generic` formatted printf functions, writes to a temporary `.c` source file, and invokes `gcc` to produce a standalone native binary executable.
