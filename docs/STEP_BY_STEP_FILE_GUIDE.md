@@ -2,6 +2,8 @@
 
 Welcome to the comprehensive, file-by-file architectural guide for the **Lumis Mini Compiler** (`.lum`). This guide provides an in-depth breakdown of every single file in the repository, explaining its purpose, internal data structures, function routines, and how data flows through the compiler pipeline.
 
+> **For a real-time step-by-step trace of how every file does its job during a program run, see [EXECUTION_FLOW_GUIDE.md](EXECUTION_FLOW_GUIDE.md).**
+
 ---
 
 ## 1. Project Directory Architecture

@@ -115,6 +115,7 @@ If an error occurs at any phase, the compiler stops and reports it with line-num
 
 ## 5. Documentation Suite
 
+- [**Step-by-Step Execution Flow & File Breakdown**](docs/EXECUTION_FLOW_GUIDE.md): Detailed walkthrough of how every file in `src/` does its job step-by-step during a program run.
 - [**Step-by-Step File-by-File Technical Guide**](docs/STEP_BY_STEP_FILE_GUIDE.md): Deep-dive into every function, struct, and module in the repository.
 - [**Grammar Specification**](docs/GRAMMAR.md): Complete BNF syntax rules.
 - [**Beginner Educational Guide Series**](docs/beginner_guide/):
