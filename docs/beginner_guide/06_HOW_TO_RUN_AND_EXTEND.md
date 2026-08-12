@@ -54,14 +54,28 @@ make test
 
 ### Running and Compiling Code
 
+Lumis supports flexible CLI flags to inspect each compilation phase individually or execute code:
+
 ```bash
-# View compiler pipeline (AST, Symbol Table, TAC)
+# 1. View full diagnostic pipeline (AST, Symbol Table, TAC)
 ./lumis tests/valid/hello.lum
 
-# Execute program directly using the in-memory interpreter
+# 2. Dump scanned lexical tokens (-t, --tokens)
+./lumis -t tests/valid/hello.lum
+
+# 3. Pretty-print Abstract Syntax Tree (-p, --ast)
+./lumis -p tests/valid/hello.lum
+
+# 4. Perform semantic checks & view Symbol Table (-s, --symtab)
+./lumis -s tests/valid/hello.lum
+
+# 5. Output Intermediate Three-Address Code (-c, --tac)
+./lumis -c tests/valid/hello.lum
+
+# 6. Execute program directly using the in-memory interpreter (-r, --run)
 ./lumis -r tests/valid/hello.lum
 
-# Compile program to a standalone native binary
+# 7. Compile program to a standalone native executable using GCC (-o)
 ./lumis -o hello tests/valid/hello.lum
 ./hello
 ```

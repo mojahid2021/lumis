@@ -70,6 +70,9 @@ void symtab_leave_scope(SymbolTable *tab) {
         while (sym) {
             Symbol *next = sym->next;
             free(sym->name);
+            if (sym->param_types) {
+                free(sym->param_types);
+            }
             free(sym);
             sym = next;
         }

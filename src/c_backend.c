@@ -1,6 +1,25 @@
-/* =============================================================
- *  c_backend.c — C Backend implementation for Lumis
- * ============================================================= */
+/* ============================================================================
+ *  c_backend.c — Target C Transpiler & GCC Compiler Driver for Lumis
+ * ============================================================================
+ *
+ *  CSE 314 COMPILER DESIGN CONCEPTS (VIVA / DEFENSE PREPARATION):
+ *
+ *  1. WHAT IS TRANSPILATION?
+ *     Transpilation (Source-to-Source Compilation) translates high-level source
+ *     code in Lumis (.lum) into standard C source code. The output C source file is
+ *     then compiled into a native machine code binary via GCC (`gcc -O2`).
+ *
+ *  2. RUNTIME HELPERS & POLYMORPHIC PRINTING:
+ *     - Polymorphic printing (`print(...)`) and string conversions are powered by C11
+ *       `_Generic` selection macros (`__lumis_print`, `__lumis_to_str`).
+ *     - String operations (concatenation `+`, equality `==`, order comparisons `<`)
+ *       emit runtime call wrappers (`__lumis_concat`, `__lumis_streq`, etc.).
+ *
+ *  3. PROCESS-SAFE TEMPORARY FILE CREATION:
+ *     Native binary builds create a process-unique temporary C file in `/tmp/`
+ *     (e.g., `/tmp/lumis_tmp_<pid>_<rand>.c`), invoke GCC via `system()`, and clean
+ *     up the temporary source file upon completion.
+ * ============================================================================ */
 
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
@@ -10,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static const char *c_type_name(DataType t) {
     switch (t) {
@@ -49,24 +69,66 @@ static void print_indent(FILE *out, int indent) {
     for (int i = 0; i < indent; i++) fputs("    ", out);
 }
 
+/* ---------- C Expression Generator Helpers ---------- */
+
+static void gen_c_literal(AstNode *node, FILE *out) {
+    switch (node->data_type) {
+        case TYPE_INT:    fprintf(out, "%d", node->int_value); break;
+        case TYPE_FLOAT:  fprintf(out, "%g", node->float_value); break;
+        case TYPE_CHAR:   fprintf(out, "'%c'", node->char_value); break;
+        case TYPE_BOOL:   fprintf(out, "%s", node->bool_value ? "true" : "false"); break;
+        case TYPE_STRING: fprintf(out, "\"%s\"", node->string_value ? node->string_value : ""); break;
+        default:          fprintf(out, "0"); break;
+    }
+}
+
+static void gen_c_binary_op(AstNode *node, FILE *out) {
+    if (node->data_type == TYPE_STRING && node->binop == OP_ADD) {
+        fputs("__lumis_concat(__lumis_to_str(", out);
+        gen_c_expr(node->children[0], out);
+        fputs("), __lumis_to_str(", out);
+        gen_c_expr(node->children[1], out);
+        fputs("))", out);
+    } else if ((node->children[0]->data_type == TYPE_STRING || node->children[1]->data_type == TYPE_STRING) &&
+               (node->binop == OP_EQ || node->binop == OP_NEQ || node->binop == OP_LT || node->binop == OP_GT || node->binop == OP_LE || node->binop == OP_GE)) {
+        switch (node->binop) {
+            case OP_EQ:  fputs("__lumis_streq(", out); break;
+            case OP_NEQ: fputs("__lumis_strneq(", out); break;
+            case OP_LT:  fputs("__lumis_strlt(", out); break;
+            case OP_GT:  fputs("__lumis_strgt(", out); break;
+            case OP_LE:  fputs("__lumis_strle(", out); break;
+            case OP_GE:  fputs("__lumis_strge(", out); break;
+            default: break;
+        }
+        fputs("__lumis_to_str(", out);
+        gen_c_expr(node->children[0], out);
+        fputs("), __lumis_to_str(", out);
+        gen_c_expr(node->children[1], out);
+        fputs("))", out);
+    } else {
+        fputs("(", out);
+        gen_c_expr(node->children[0], out);
+        fprintf(out, " %s ", c_binop_str(node->binop));
+        gen_c_expr(node->children[1], out);
+        fputs(")", out);
+    }
+}
+
+static void gen_c_call(AstNode *node, FILE *out) {
+    fprintf(out, "%s(", node->name);
+    for (int i = 0; i < node->arg_count; i++) {
+        if (i > 0) fputs(", ", out);
+        gen_c_expr(node->args[i], out);
+    }
+    fputs(")", out);
+}
+
 static void gen_c_expr(AstNode *node, FILE *out) {
     if (!node) return;
 
     switch (node->kind) {
-        case NODE_LITERAL:
-            switch (node->data_type) {
-                case TYPE_INT:    fprintf(out, "%d", node->int_value); break;
-                case TYPE_FLOAT:  fprintf(out, "%g", node->float_value); break;
-                case TYPE_CHAR:   fprintf(out, "'%c'", node->char_value); break;
-                case TYPE_BOOL:   fprintf(out, "%s", node->bool_value ? "true" : "false"); break;
-                case TYPE_STRING: fprintf(out, "\"%s\"", node->string_value ? node->string_value : ""); break;
-                default:          fprintf(out, "0"); break;
-            }
-            break;
-
-        case NODE_VAR_REF:
-            fprintf(out, "%s", node->name);
-            break;
+        case NODE_LITERAL: gen_c_literal(node, out); break;
+        case NODE_VAR_REF: fprintf(out, "%s", node->name); break;
 
         case NODE_UNARY_OP:
             if (node->unop == OP_NEG) fputs("-", out);
@@ -76,50 +138,62 @@ static void gen_c_expr(AstNode *node, FILE *out) {
             fputs(")", out);
             break;
 
-        case NODE_BINARY_OP:
-            if (node->data_type == TYPE_STRING && node->binop == OP_ADD) {
-                fputs("__lumis_concat(__lumis_to_str(", out);
-                gen_c_expr(node->children[0], out);
-                fputs("), __lumis_to_str(", out);
-                gen_c_expr(node->children[1], out);
-                fputs("))", out);
-            } else if ((node->children[0]->data_type == TYPE_STRING || node->children[1]->data_type == TYPE_STRING) &&
-                       (node->binop == OP_EQ || node->binop == OP_NEQ || node->binop == OP_LT || node->binop == OP_GT || node->binop == OP_LE || node->binop == OP_GE)) {
-                switch (node->binop) {
-                    case OP_EQ:  fputs("__lumis_streq(", out); break;
-                    case OP_NEQ: fputs("__lumis_strneq(", out); break;
-                    case OP_LT:  fputs("__lumis_strlt(", out); break;
-                    case OP_GT:  fputs("__lumis_strgt(", out); break;
-                    case OP_LE:  fputs("__lumis_strle(", out); break;
-                    case OP_GE:  fputs("__lumis_strge(", out); break;
-                    default: break;
-                }
-                fputs("__lumis_to_str(", out);
-                gen_c_expr(node->children[0], out);
-                fputs("), __lumis_to_str(", out);
-                gen_c_expr(node->children[1], out);
-                fputs("))", out);
-            } else {
-                fputs("(", out);
-                gen_c_expr(node->children[0], out);
-                fprintf(out, " %s ", c_binop_str(node->binop));
-                gen_c_expr(node->children[1], out);
-                fputs(")", out);
-            }
-            break;
-
-        case NODE_CALL:
-            fprintf(out, "%s(", node->name);
-            for (int i = 0; i < node->arg_count; i++) {
-                if (i > 0) fputs(", ", out);
-                gen_c_expr(node->args[i], out);
-            }
-            fputs(")", out);
-            break;
-
-        default:
-            break;
+        case NODE_BINARY_OP: gen_c_binary_op(node, out); break;
+        case NODE_CALL:      gen_c_call(node, out); break;
+        default: break;
     }
+}
+
+/* ---------- C Statement Generator Helpers ---------- */
+
+static void gen_c_if(AstNode *node, FILE *out, int indent) {
+    print_indent(out, indent);
+    fputs("if (", out);
+    gen_c_expr(node->children[0], out);
+    fputs(")\n", out);
+    gen_c_stmt(node->children[1], out, indent);
+    if (node->child_count > 2) {
+        print_indent(out, indent);
+        fputs("else\n", out);
+        gen_c_stmt(node->children[2], out, indent);
+    }
+}
+
+static void gen_c_while(AstNode *node, FILE *out, int indent) {
+    print_indent(out, indent);
+    fputs("while (", out);
+    gen_c_expr(node->children[0], out);
+    fputs(")\n", out);
+    gen_c_stmt(node->children[1], out, indent);
+}
+
+static void gen_c_for(AstNode *node, FILE *out, int indent) {
+    print_indent(out, indent);
+    fputs("{\n", out);
+    gen_c_stmt(node->children[0], out, indent + 1); /* init */
+    print_indent(out, indent + 1);
+    fputs("while (", out);
+    gen_c_expr(node->children[1], out); /* cond */
+    fputs(") {\n", out);
+    gen_c_stmt(node->children[3], out, indent + 2); /* body */
+    gen_c_stmt(node->children[2], out, indent + 2); /* update */
+    print_indent(out, indent + 1);
+    fputs("}\n", out);
+    print_indent(out, indent);
+    fputs("}\n", out);
+}
+
+static void gen_c_func_decl(AstNode *node, FILE *out) {
+    fprintf(out, "%s %s(", c_type_name(node->return_type), node->name);
+    for (int i = 0; i < node->param_count; i++) {
+        if (i > 0) fputs(", ", out);
+        fprintf(out, "%s %s", c_type_name(node->params[i]->data_type), node->params[i]->name);
+    }
+    fputs(") {\n", out);
+    for (int i = 0; i < node->child_count; i++) {
+        gen_c_stmt(node->children[i], out, 1);
+    }
+    fputs("}\n\n", out);
 }
 
 static void gen_c_stmt(AstNode *node, FILE *out, int indent) {
@@ -158,42 +232,9 @@ static void gen_c_stmt(AstNode *node, FILE *out, int indent) {
             fputs(";\n", out);
             break;
 
-        case NODE_IF:
-            print_indent(out, indent);
-            fputs("if (", out);
-            gen_c_expr(node->children[0], out);
-            fputs(")\n", out);
-            gen_c_stmt(node->children[1], out, indent);
-            if (node->child_count > 2) {
-                print_indent(out, indent);
-                fputs("else\n", out);
-                gen_c_stmt(node->children[2], out, indent);
-            }
-            break;
-
-        case NODE_WHILE:
-            print_indent(out, indent);
-            fputs("while (", out);
-            gen_c_expr(node->children[0], out);
-            fputs(")\n", out);
-            gen_c_stmt(node->children[1], out, indent);
-            break;
-
-        case NODE_FOR:
-            print_indent(out, indent);
-            fputs("{\n", out);
-            gen_c_stmt(node->children[0], out, indent + 1); /* init */
-            print_indent(out, indent + 1);
-            fputs("while (", out);
-            gen_c_expr(node->children[1], out); /* cond */
-            fputs(") {\n", out);
-            gen_c_stmt(node->children[3], out, indent + 2); /* body */
-            gen_c_stmt(node->children[2], out, indent + 2); /* update */
-            print_indent(out, indent + 1);
-            fputs("}\n", out);
-            print_indent(out, indent);
-            fputs("}\n", out);
-            break;
+        case NODE_IF:    gen_c_if(node, out, indent); break;
+        case NODE_WHILE: gen_c_while(node, out, indent); break;
+        case NODE_FOR:   gen_c_for(node, out, indent); break;
 
         case NODE_RETURN:
             print_indent(out, indent);
@@ -220,16 +261,7 @@ static void gen_c_stmt(AstNode *node, FILE *out, int indent) {
             break;
 
         case NODE_FUNC_DECL:
-            fprintf(out, "%s %s(", c_type_name(node->return_type), node->name);
-            for (int i = 0; i < node->param_count; i++) {
-                if (i > 0) fputs(", ", out);
-                fprintf(out, "%s %s", c_type_name(node->params[i]->data_type), node->params[i]->name);
-            }
-            fputs(") {\n", out);
-            for (int i = 0; i < node->child_count; i++) {
-                gen_c_stmt(node->children[i], out, 1);
-            }
-            fputs("}\n\n", out);
+            gen_c_func_decl(node, out);
             break;
 
         default:
@@ -310,7 +342,7 @@ void c_backend_generate(AstNode *root, FILE *out) {
 
 int c_backend_compile_binary(AstNode *root, const char *output_binary) {
     char tmp_c_path[256];
-    snprintf(tmp_c_path, sizeof(tmp_c_path), "/tmp/lumis_tmp_%d.c", rand() % 1000000);
+    snprintf(tmp_c_path, sizeof(tmp_c_path), "/tmp/lumis_tmp_%d_%d.c", (int)getpid(), rand() % 1000000);
 
     FILE *f = fopen(tmp_c_path, "w");
     if (!f) {

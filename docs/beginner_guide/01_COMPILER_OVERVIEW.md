@@ -30,15 +30,15 @@ A modern compiler pipeline is divided into two main parts:
 
 ## 2. Theoretical Foundations (Compiler Design Course Mapping)
 
-| Compiler Phase | Formal CS Concept | Tool / Source File in Lumis |
-| -------------- | ----------------- | --------------------------- |
-| **Lexical Analysis** | Regular Expressions, Nondeterministic/Deterministic Finite Automata (DFA) | Flex (`src/lexer.l`) |
-| **Syntax Analysis** | Context-Free Grammars (CFG), Backus-Naur Form (BNF), LALR(1) Parsing | Bison (`src/parser.y`) |
-| **AST Construction** | Syntax-Directed Translation (SDT), Abstract Syntax Trees | `src/ast.h`, `src/ast.c` |
-| **Semantic Analysis** | Symbol Tables, Scope Chains, Type Systems & Promotion | `src/symtab.c`, `src/semantic.c` |
-| **Code Generation** | Three-Address Code (TAC), Linear Quadruples/Triples | `src/codegen.c` |
-| **Interpretation** | Tree-Walking Interpreter, Scope Environments | `src/interp.c` |
-| **Target Compilation** | Target Code Generation, C Backend, Linker Driver | `src/c_backend.c` |
+| Compiler Phase | Formal CS Concept | Tool / Source File in Lumis | Diagnostic CLI Flag |
+| -------------- | ----------------- | --------------------------- | ------------------- |
+| **Lexical Analysis** | Regular Expressions, Nondeterministic/Deterministic Finite Automata (DFA) | Flex (`src/lexer.l`) | `-t`, `--tokens` |
+| **Syntax Analysis** | Context-Free Grammars (CFG), Backus-Naur Form (BNF), LALR(1) Parsing | Bison (`src/parser.y`) | `-p`, `--ast` |
+| **AST Construction** | Syntax-Directed Translation (SDT), Abstract Syntax Trees | `src/ast.h`, `src/ast.c` | `-p`, `--ast` |
+| **Semantic Analysis** | Symbol Tables, Scope Chains, Type Systems & Promotion | `src/symtab.c`, `src/semantic.c` | `-s`, `--symtab` |
+| **Code Generation** | Three-Address Code (TAC), Linear Quadruples/Triples | `src/codegen.c` | `-c`, `--tac` |
+| **Interpretation** | Tree-Walking Interpreter, Scope Environments | `src/interp.c` | `-r`, `--run` |
+| **Target Compilation** | Target Code Generation, C Backend, Linker Driver | `src/c_backend.c` | `-o <binary>` |
 
 ---
 
@@ -56,7 +56,7 @@ int main() {
 }
 ```
 
-### Phase 1: Lexical Analysis (Flex Scanner — `src/lexer.l`)
+### Phase 1: Lexical Analysis (Flex Scanner — `src/lexer.l`) — Diagnostic Flag `-t`
 The lexer reads the character stream and converts it into a token stream:
 - `int` $\rightarrow$ `INT`
 - `main` $\rightarrow$ `ID("main")`
@@ -66,7 +66,7 @@ The lexer reads the character stream and converts it into a token stream:
 - `print(sum);` $\rightarrow$ `PRINT`, `LPAREN`, `ID("sum")`, `RPAREN`, `SEMI`
 - `return 0;` $\rightarrow$ `RETURN`, `INT_NUM(0)`, `SEMI`
 
-### Phase 2: Syntax Analysis (Bison Parser — `src/parser.y`)
+### Phase 2: Syntax Analysis (Bison Parser — `src/parser.y`) — Diagnostic Flag `-p`
 The parser matches the token sequence against Lumis BNF grammar rules using an LALR(1) parsing table and constructs the **AST**:
 
 ```text
@@ -82,7 +82,7 @@ Program
         Literal(int): 0
 ```
 
-### Phase 3: Semantic Analysis & Symbol Table (`src/semantic.c` & `src/symtab.c`)
+### Phase 3: Semantic Analysis & Symbol Table (`src/semantic.c` & `src/symtab.c`) — Diagnostic Flag `-s`
 1. Creates `global` scope and registers function `main : int`.
 2. Creates function scope `main` and registers symbols:
    - `x : SYM_VARIABLE, TYPE_INT`
@@ -94,7 +94,7 @@ Program
 
 ### Phase 4: Back-End Modes
 
-#### Mode 1: Three-Address Code (TAC Output — Default)
+#### Mode 1: Three-Address Code Output (`./lumis -c hello.lum`)
 ```text
 FUNC main:
     x = 10
@@ -120,6 +120,8 @@ Translates AST to C code, invokes `gcc`, and builds standalone executable `./hel
 $ ./hello
 30
 ```
+
+> **For a detailed file-by-file technical breakdown, see [`docs/STEP_BY_STEP_FILE_GUIDE.md`](../STEP_BY_STEP_FILE_GUIDE.md).**
 
 ---
 

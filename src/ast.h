@@ -1,20 +1,27 @@
-/* =============================================================
- *  ast.h — Abstract Syntax Tree definitions for Lumis
- * =============================================================
+/* ============================================================================
+ *  ast.h — Abstract Syntax Tree (AST) Definitions for Lumis Compiler
+ * ============================================================================
  *
- *  An AST is a tree representation of the source program. Each
- *  node corresponds to a syntactic construct (a function, an
- *  if-statement, an addition, ...). The parser builds the tree
- *  using the constructor functions in ast.c; later phases
- *  (semantic checker, code generator) walk it.
+ *  CSE 314 COMPILER DESIGN CONCEPTS (VIVA / DEFENSE PREPARATION):
  *
- *  Design choices:
- *    - Every node carries a `line` field for accurate error
- *      messages even after parsing finishes.
- *    - We use a single tagged union (NodeKind) instead of a
- *      class hierarchy, which keeps the C code short and easy
- *      to read for beginners.
- * ============================================================= */
+ *  1. WHAT IS AN AST?
+ *     An Abstract Syntax Tree (AST) is an intermediate tree representation of
+ *     the source program constructed during syntax analysis (parsing). Unlike
+ *     a Concrete Syntax Tree (Parse Tree), an AST discards purely syntactic
+ *     tokens such as semicolons, commas, and parentheses while preserving
+ *     structural semantics (expressions, control flow, functions).
+ *
+ *  2. WHY A TAGGED UNSTRUCT / TAGGED UNION IN C?
+ *     In C (which lacks C++ class inheritance), AST nodes are represented using
+ *     a single unified struct `AstNode` tagged with an enum `NodeKind`. This allows
+ *     all nodes (statements, expressions, literals, declarations) to be stored
+ *     in a uniform pointer dynamic array (`AstNode **children`).
+ *
+ *  3. RECURSIVE HEAP ALLOCATION & DEALLOCATION:
+ *     Every tree node is heap-allocated via constructors in `ast.c` and must
+ *     be recursively deallocated (`ast_free`) using post-order tree traversal
+ *     to prevent memory leaks.
+ * ============================================================================ */
 
 #ifndef LUMIS_AST_H
 #define LUMIS_AST_H

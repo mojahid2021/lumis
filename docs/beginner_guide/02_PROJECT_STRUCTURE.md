@@ -10,9 +10,9 @@ This document breaks down every file in the `lumis` repository, explaining its p
 lumis/
 ├── Makefile                      # Automated build script
 ├── README.md                     # High-level project documentation
-├── Mini Compiler (Lumis).md      # Original proposal and specifications
 ├── docs/
 │   ├── GRAMMAR.md                # Language grammar rules (BNF format)
+│   ├── STEP_BY_STEP_FILE_GUIDE.md# [Detailed Technical Guide] Full file-by-file breakdown
 │   └── beginner_guide/           # Detailed educational guides
 │       ├── 01_COMPILER_OVERVIEW.md
 │       ├── 02_PROJECT_STRUCTURE.md
@@ -22,7 +22,7 @@ lumis/
 │       ├── 06_HOW_TO_RUN_AND_EXTEND.md
 │       └── 07_COMPILER_DESIGN_VIVA_PREP.md  # Viva & Exam defense guide
 ├── src/                          # Compiler Source Code (C, Flex, Bison)
-│   ├── main.c                    # Driver entry point & CLI options
+│   ├── main.c                    # Driver entry point & CLI options (-t, -p, -s, -c, -r, -o)
 │   ├── lexer.l                   # Flex scanner specification
 │   ├── parser.y                  # Bison parser specification
 │   ├── ast.h / ast.c             # Abstract Syntax Tree representation

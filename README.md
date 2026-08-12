@@ -99,60 +99,54 @@ make clean
 
 ---
 
-## 4. Usage
+## 4. Usage & Diagnostic Modes
 
-### Inspect Compiler Pipeline (Default)
-
-```bash
-./lumis <source-file.lum>
-```
-
-Example:
+Lumis supports multi-mode execution flags for inspecting compiler passes and running programs:
 
 ```bash
+# 1. Default Diagnostic Pipeline (AST, Symbol Table, TAC)
 ./lumis tests/valid/hello.lum
-```
 
-The compiler prints, in order:
+# 2. Dump Lexical Scanned Tokens (-t, --tokens)
+./lumis -t tests/valid/hello.lum
 
-1. **Token stream** (from the lexer)
-2. **Abstract Syntax Tree** (pretty-printed)
-3. **Symbol table** summary
-4. **Three-Address Code** (the generated "assembly-like" output)
+# 3. Pretty-print Abstract Syntax Tree (-p, --ast)
+./lumis -p tests/valid/hello.lum
 
-### Compile & Execute Program Directly (`-r` / `--run`)
+# 4. Semantic Checks & Symbol Table Dump (-s, --symtab)
+./lumis -s tests/valid/hello.lum
 
-```bash
+# 5. Output Intermediate Three-Address Code (-c, --tac)
+./lumis -c tests/valid/hello.lum
+
+# 6. Execute Program In-Memory (-r, --run)
 ./lumis -r tests/valid/hello.lum
-```
 
-Output:
-
-```text
-=== PROGRAM EXECUTION ===
-42
-=========================
-Program finished with exit code 0
-```
-
-### Compile to Standalone Native Binary (`-o <output>`)
-
-```bash
+# 7. Compile Program to Standalone Native Binary via GCC (-o)
 ./lumis -o hello tests/valid/hello.lum
 ./hello
 ```
 
-Output:
-
-```text
-42
-```
-
-If an error occurs at any phase, the compiler stops and reports it with the line number.
+If an error occurs at any phase, the compiler stops and reports it with line-numbered diagnostics.
 
 ---
 
-## 5. Lumis Language Syntax Reference (`.lum` Code)
+## 5. Documentation Suite
+
+- [**Step-by-Step File-by-File Technical Guide**](docs/STEP_BY_STEP_FILE_GUIDE.md): Deep-dive into every function, struct, and module in the repository.
+- [**Grammar Specification**](docs/GRAMMAR.md): Complete BNF syntax rules.
+- [**Beginner Educational Guide Series**](docs/beginner_guide/):
+  - [01. Compiler Overview & Pipeline](docs/beginner_guide/01_COMPILER_OVERVIEW.md)
+  - [02. Project Structure & Files](docs/beginner_guide/02_PROJECT_STRUCTURE.md)
+  - [03. Lexer & Parser (Flex & Bison)](docs/beginner_guide/03_LEXER_AND_PARSER.md)
+  - [04. Semantic Analysis & Symbol Table](docs/beginner_guide/04_SEMANTIC_ANALYSIS_AND_SYMTAB.md)
+  - [05. Code Generation & Execution Engine](docs/beginner_guide/05_CODE_GENERATION.md)
+  - [06. How to Run, Test, and Extend](docs/beginner_guide/06_HOW_TO_RUN_AND_EXTEND.md)
+  - [07. Compiler Design Viva & Exam Prep](docs/beginner_guide/07_COMPILER_DESIGN_VIVA_PREP.md)
+
+---
+
+## 6. Lumis Language Syntax Reference (`.lum` Code)
 
 Writing `.lum` programs is fast and intuitive:
 

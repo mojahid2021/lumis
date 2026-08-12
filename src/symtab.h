@@ -1,18 +1,27 @@
-/* =============================================================
- *  symtab.h — Symbol Table for Lumis
- * =============================================================
+/* ============================================================================
+ *  symtab.h — Nested Symbol Table & Scope Stack for Lumis Compiler
+ * ============================================================================
  *
- *  A symbol table maps identifiers (variable / function names)
- *  to their declared type, scope, and other attributes. The
- *  semantic checker uses it to answer questions like:
- *      "Is this variable declared?"
- *      "Has it been declared already in this scope?"
- *      "Does this function exist?"
+ *  CSE 314 COMPILER DESIGN CONCEPTS (VIVA / DEFENSE PREPARATION):
  *
- *  Implementation: a simple linked list of scopes, each of
- *  which is a linked list of symbols. Easy to read, good enough
- *  for a teaching compiler.
- * ============================================================= */
+ *  1. WHAT IS A SYMBOL TABLE?
+ *     A symbol table is a core compiler data structure that stores information
+ *     about program identifiers (variables, parameters, functions), such as
+ *     their name, type, declared line number, and scope.
+ *
+ *  2. PARENT-LINKED SCOPE STACK (LEXICAL SCOPING):
+ *     Lumis implements block scoping (`{ ... }`) using a dynamic scope stack.
+ *     Each `Scope` structure contains a head pointer to a linked list of symbols
+ *     declared in that block and a `parent` pointer pointing to the enclosing
+ *     outer scope.
+ *
+ *  3. IDENTIFIER LOOKUP ALGORITHM:
+ *     - `symtab_lookup_current()` checks only the current scope (O(N) in local
+ *       symbol list) to detect local duplicate declarations.
+ *     - `symtab_lookup()` searches the active scope stack by following the `parent`
+ *       chain upward to the global scope. This naturally handles variable
+ *       shadowing (inner declarations hiding outer ones).
+ * ============================================================================ */
 
 #ifndef LUMIS_SYMTAB_H
 #define LUMIS_SYMTAB_H

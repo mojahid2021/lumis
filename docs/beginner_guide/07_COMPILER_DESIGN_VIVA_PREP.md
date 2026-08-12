@@ -16,9 +16,15 @@ This guide is specifically written to help you **defend your project** in a **Co
 ### Q2: What is the difference between a Compiler and an Interpreter? Does Lumis do both?
 > **Answer**: A **compiler** translates source code into machine or intermediate code before execution. An **interpreter** executes instructions directly in-memory. 
 > **Lumis does both**:
-> - Default mode (`./lumis file.lum`): Acts as a **compiler front-end**, outputting TAC intermediate code.
-> - Execution mode (`./lumis -r file.lum`): Acts as an **interpreter**, directly evaluating the AST in-memory.
-> - Binary compilation mode (`./lumis -o bin file.lum`): Acts as a **native compiler**, producing a standalone C binary.
+> - Token dump mode (`./lumis -t file.lum`): Dumps Flex scanned tokens.
+> - AST visualizer mode (`./lumis -p file.lum`): Pretty-prints the Abstract Syntax Tree.
+> - Symbol Table mode (`./lumis -s file.lum`): Enforces semantics and prints Symbol Table.
+> - Intermediate TAC mode (`./lumis -c file.lum`): Outputs Three-Address Code.
+> - Default pipeline (`./lumis file.lum`): Runs full 4-phase diagnostic compilation suite.
+> - In-memory execution mode (`./lumis -r file.lum`): Direct AST tree-walking interpreter.
+> - Native binary compilation mode (`./lumis -o bin file.lum`): Transpiles to C and compiles via GCC.
+
+> **For complete file-by-file explanations for every module, refer to [`docs/STEP_BY_STEP_FILE_GUIDE.md`](../STEP_BY_STEP_FILE_GUIDE.md).**
 
 ---
 

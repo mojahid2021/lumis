@@ -1,12 +1,29 @@
 %{
-/* =============================================================
- *  parser.y — Bison LALR Parser for Lumis
- * =============================================================
- *  Parses the token stream from Flex and builds an Abstract Syntax
- *  Tree (AST) rooted at `ast_root`.
+/* ============================================================================
+ *  parser.y — Bison LALR(1) Syntax Parser for Lumis Compiler
+ * ============================================================================
  *
- *  Error handling: `yyerror` reports syntax errors with line numbers.
- * ============================================================= */
+ *  CSE 314 COMPILER DESIGN CONCEPTS (VIVA / DEFENSE PREPARATION):
+ *
+ *  1. WHAT IS A SYNTAX PARSER?
+ *     The parser is the second phase of compilation. It receives a token stream
+ *     from Flex and verifies whether the sequence obeys the Context-Free Grammar
+ *     (CFG) of Lumis.
+ *
+ *  2. LALR(1) PARSING & SHIFT-REDUCE MECHANICS:
+ *     Bison generates a Look-Ahead LR parser with 1 token of lookahead (LALR(1)).
+ *     It operates using a stack with two primary actions:
+ *       - Shift: Push the next token onto the parse stack.
+ *       - Reduce: Match stack top tokens against a grammar rule RHS and replace
+ *         them with the non-terminal LHS.
+ *
+ *  3. OPERATOR PRECEDENCE & DANGLING-ELSE RESOLUTION:
+ *     - Precedence declarations (`%left`, `%right`, `%nonassoc`) specify associativity
+ *       and operator priorities to prevent shift-reduce ambiguities.
+ *     - The dangling-else ambiguity (`if (c1) if (c2) s1 else s2`) is resolved by
+ *       giving `ELSE` higher precedence than `LOWER_THAN_ELSE`, causing the parser
+ *       to bind `else` to the nearest `if`.
+ * ============================================================================ */
 
 #include <stdio.h>
 #include <stdlib.h>
