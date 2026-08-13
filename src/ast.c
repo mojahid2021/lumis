@@ -1,10 +1,5 @@
 /* =============================================================
  *  ast.c — Abstract Syntax Tree implementation for Lumis
- * =============================================================
- *  See ast.h for the design overview. This file just provides
- *  the "new_*" constructors and a few helpers. The implementations
- *  are intentionally straightforward — every helper is small and
- *  does one thing.
  * ============================================================= */
 
 #ifndef _POSIX_C_SOURCE

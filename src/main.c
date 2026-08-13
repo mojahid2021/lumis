@@ -1,14 +1,6 @@
 /* ============================================================================
  *  main.c — Main CLI Driver & Pipeline Orchestrator for Lumis Compiler
- * ============================================================================
- *
- *  CSE 314 COMPILER DESIGN LAB (STUDENT & VIVA GUIDE):
- *
- *  How the compiler pipeline works step-by-step:
- *  1. Open Lumis source file (.lum) and pass file pointer `yyin` to Flex scanner.
- *  2. Invoke `yyparse()` (Bison) to tokenize and construct the Abstract Syntax Tree (AST).
- *  3. Perform `semantic_check()` to validate types, scope rules, and variable declarations.
- *  4. Execute `interp_execute()` to run the AST in-memory via the tree-walking interpreter.
+
  * ============================================================================ */
 
 #include <stdio.h>

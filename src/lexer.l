@@ -1,25 +1,6 @@
 %{
 /* ============================================================================
  *  lexer.l — Flex Lexical Analyzer for Lumis Compiler
- * ============================================================================
- *
- *  CSE 314 COMPILER DESIGN CONCEPTS (VIVA / DEFENSE PREPARATION):
- *
- *  1. WHAT IS A LEXICAL ANALYZER (LEXER / SCANNER)?
- *     The lexer is the first phase of the compiler. It reads the source code as
- *     a linear stream of characters and groups them into meaningful tokens
- *     (keywords, identifiers, numbers, operators, punctuation) using Regular
- *     Expressions (Regex).
- *
- *  2. FLEX AND DETERMINISTIC FINITE AUTOMATA (DFA):
- *     Flex converts the regular expressions defined below into an optimized
- *     Deterministic Finite Automaton (DFA) state machine. Scanning executes in
- *     O(L) linear time with respect to source code length L.
- *
- *  3. TOKEN VALUES & YYVAL:
- *     Tokens without associated values return their integer ID directly (e.g., INT, IF).
- *     Tokens with values (numbers, strings, identifiers) store their parsed values inside
- *     the `yylval` union (defined by Bison in parser.tab.h) before returning the token ID.
  * ============================================================================ */
 
 #ifndef _POSIX_C_SOURCE

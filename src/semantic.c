@@ -1,26 +1,5 @@
 /* ============================================================================
  *  semantic.c — Static Semantic Analyzer for Lumis Compiler
- * ============================================================================
- *
- *  CSE 314 COMPILER DESIGN CONCEPTS (VIVA / DEFENSE PREPARATION):
- *
- *  1. WHAT IS SEMANTIC ANALYSIS?
- *     Semantic analysis is the third phase of compilation. While the parser
- *     verifies syntactic grammar, the semantic analyzer enforces context-sensitive
- *     rules that cannot be captured by context-free grammars (CFGs):
- *       - Scope & Declaration: All identifiers must be declared before use.
- *       - Unique Declarations: No variable or function redeclaration in the same scope.
- *       - Static Type Safety: Operands, assignments, return statements, and function
- *         arguments must have compatible static types.
- *       - Implicit Type Promotion: Int literals/expressions are implicitly promoted
- *         to float when assigned to or operated with float targets.
- *
- *  2. TWO-PASS GLOBAL SYMBOL REGISTRATION:
- *     For programs (NODE_PROGRAM), we run two passes:
- *       - Pass 1: Scan all global function declarations and insert signatures
- *         into the Symbol Table so function calls can be type-checked regardless
- *         of declaration order.
- *       - Pass 2: Recursively traverse function bodies and statements.
  * ============================================================================ */
 
 #include "semantic.h"

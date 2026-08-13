@@ -1,11 +1,5 @@
 /* =============================================================
  *  semantic.h — Semantic Analyzer for Lumis
- * =============================================================
- *  Traverses the AST built by the parser and enforces semantic rules:
- *    1. Declaration before use: variables and functions must be declared.
- *    2. Scope & redeclaration: no duplicate symbol in the same scope.
- *    3. Type checking: assignments, operations, return values must have compatible types.
- *    4. Function call validation: argument count and types must match signature.
  * ============================================================= */
 
 #ifndef LUMIS_SEMANTIC_H

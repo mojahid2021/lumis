@@ -1,24 +1,5 @@
 /* ============================================================================
  *  interp.c — AST Tree-Walking Interpreter for Lumis Compiler
- * ============================================================================
- *
- *  CSE 314 COMPILER DESIGN CONCEPTS (VIVA / DEFENSE PREPARATION):
- *
- *  1. WHAT IS A TREE-WALKING INTERPRETER?
- *     Instead of translating code to assembly or bytecode, a tree-walking interpreter
- *     evaluates the program directly by executing statement nodes and evaluating
- *     expression nodes on the Abstract Syntax Tree (AST) in memory.
- *
- *  2. RUNTIME ENVIRONMENT (`Env` & `VarSymbol`):
- *     Variable values are stored dynamically in runtime environment frames (`Env`).
- *     Nested block statements (`{ ... }`) and function calls create child environment
- *     frames with parent pointers (`parent`). Variable lookups climb the environment
- *     chain dynamically.
- *
- *  3. FUNCTION CALL FRAMES & STACK SIMULATION:
- *     Function calls allocate a fresh environment (`fenv`), bind arguments to parameter
- *     names, and recursively execute the function body. Return values and control flow
- *     unwinding are managed using an `InterpState` structure holding return flags.
  * ============================================================================ */
 
 #ifndef _POSIX_C_SOURCE

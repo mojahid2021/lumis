@@ -1,11 +1,5 @@
 /* =============================================================
  *  symtab.c — Symbol Table implementation for Lumis
- * =============================================================
- *  See symtab.h for the data layout. Each Scope is a linked
- *  list of Symbol entries, and the table keeps a pointer to
- *  the "current" scope. New symbols are inserted at the head
- *  for O(1) insertion (lookup walks the list — fine for our
- *  tiny programs).
  * ============================================================= */
 
 #ifndef _POSIX_C_SOURCE
